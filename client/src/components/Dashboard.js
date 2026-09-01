@@ -189,7 +189,10 @@ function Dashboard() {
 
   const handleCreateChannel = async (e) => {
     e.preventDefault();
-    if (!selectedServer) return;
+    if (!selectedServer) {
+      alert('Select a server first');
+      return;
+    }
     try {
       const res = await axios.post(`${API_URL}/api/servers/${selectedServer.id}/channels`, { 
         name: newChannelName, 
@@ -201,6 +204,7 @@ function Dashboard() {
       setNewChannelType('text');
     } catch (error) {
       console.error('Error creating channel:', error);
+      alert('Error: ' + (error.response?.data?.error || error.message));
     }
   };
 
