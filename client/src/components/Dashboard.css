@@ -159,6 +159,10 @@
 }
 
 .voice-channel.has-users {
+  color: #3ba55c;
+}
+
+.voice-channel.has-users .voice-channel-name {
   color: #dcddde;
 }
 
