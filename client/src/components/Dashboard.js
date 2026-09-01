@@ -488,7 +488,9 @@ function Dashboard() {
             <div className="channels-list">
               <div className="channel-category">
                 <span>Text Channels</span>
-                <button className="add-channel-btn" onClick={() => setShowCreateChannel(true)}>+</button>
+                {selectedServer?.ownerId === user.id && (
+                  <button className="add-channel-btn" onClick={() => setShowCreateChannel(true)}>+</button>
+                )}
               </div>
               {channels.filter(ch => ch.type === 'text').map(channel => (
                 <div
@@ -504,7 +506,9 @@ function Dashboard() {
             <div className="channels-list">
               <div className="channel-category">
                 <span>Voice Channels</span>
-                <button className="add-channel-btn" onClick={() => { setNewChannelType('voice'); setShowCreateChannel(true); }}>+</button>
+                {selectedServer?.ownerId === user.id && (
+                  <button className="add-channel-btn" onClick={() => { setNewChannelType('voice'); setShowCreateChannel(true); }}>+</button>
+                )}
               </div>
               {channels.filter(ch => ch.type === 'voice').map(channel => {
                 const usersInChannel = allVoiceChannels[channel.id] || [];

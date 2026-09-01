@@ -22,6 +22,7 @@ const COLUMN_MAP = {
   customstatus: 'customStatus',
   joinedat: 'joinedAt',
   createdat: 'createdAt',
+  ownerid: 'ownerId',
 };
 
 function mapRow(row) {
