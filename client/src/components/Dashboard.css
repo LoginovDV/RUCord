@@ -27,6 +27,19 @@
   transition: border-radius 0.2s, background-color 0.2s;
   color: #fff;
   font-weight: 600;
+  position: relative;
+}
+
+.server-voice-indicator {
+  position: absolute;
+  left: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  background-color: #3ba55c;
+  border-radius: 50%;
+  border: 2px solid #202225;
 }
 
 .server-icon:hover {

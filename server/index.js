@@ -117,6 +117,15 @@ app.get('/api/voice-channels', authenticateToken, async (req, res) => {
   res.json(allVoiceState);
 });
 
+app.get('/api/all-channels', authenticateToken, async (req, res) => {
+  const channelsList = await all(`
+    SELECT c.* FROM channels c
+    INNER JOIN server_members sm ON c.serverid = sm.serverid
+    WHERE sm.userid = $1
+  `, [req.user.id]);
+  res.json(channelsList);
+});
+
 app.post('/api/servers/:serverId/join', authenticateToken, async (req, res) => {
   try {
     const { serverId } = req.params;

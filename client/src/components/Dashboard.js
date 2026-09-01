@@ -43,6 +43,7 @@ function Dashboard() {
   const [isDeafened, setIsDeafened] = useState(false);
   const [allVoiceChannels, setAllVoiceChannels] = useState({});
   const [speakingUsers, setSpeakingUsers] = useState({});
+  const [allChannels, setAllChannels] = useState([]);
   const toggleMuteRef = useRef(null);
   const toggleDeafenRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -52,7 +53,17 @@ function Dashboard() {
     loadServers();
     loadFriends();
     loadAllVoiceChannels();
+    loadAllChannels();
   }, []);
+
+  const loadAllChannels = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/api/all-channels`);
+      setAllChannels(res.data);
+    } catch (error) {
+      console.error('Error loading all channels:', error);
+    }
+  };
 
   useEffect(() => {
     if (selectedServer) {
@@ -330,6 +341,14 @@ function Dashboard() {
   const handleLeaveVoiceChannel = () => {
     if (connectedVoiceChannel) {
       socket.emit('leave_voice_channel', { channelId: connectedVoiceChannel, userId: user.id });
+      setAllVoiceChannels(prev => {
+        const next = { ...prev };
+        if (next[connectedVoiceChannel]) {
+          next[connectedVoiceChannel] = next[connectedVoiceChannel].filter(vu => vu.userId !== user.id);
+          if (next[connectedVoiceChannel].length === 0) delete next[connectedVoiceChannel];
+        }
+        return next;
+      });
       setConnectedVoiceChannel(null);
       setVoiceUsers([]);
       setRemoteScreen(null);
@@ -347,20 +366,25 @@ function Dashboard() {
           <span>R</span>
         </div>
         <div className="server-divider"></div>
-        {servers.map(server => (
-          <div
-            key={server.id}
-            className={`server-icon ${selectedServer?.id === server.id ? 'selected' : ''}`}
-            onClick={() => {
-              setSelectedServer(server);
-              setActiveTab('servers');
-              setSelectedChannel(null);
-              setMessages([]);
-            }}
-          >
-            {server.name.charAt(0).toUpperCase()}
-          </div>
-        ))}
+        {servers.map(server => {
+          const serverChannels = allChannels.filter(ch => ch.serverid === server.id);
+          const hasVoiceUsers = serverChannels.some(ch => ch.type === 'voice' && allVoiceChannels[ch.id] && allVoiceChannels[ch.id].length > 0);
+          return (
+            <div
+              key={server.id}
+              className={`server-icon ${selectedServer?.id === server.id ? 'selected' : ''}`}
+              onClick={() => {
+                setSelectedServer(server);
+                setActiveTab('servers');
+                setSelectedChannel(null);
+                setMessages([]);
+              }}
+            >
+              {server.name.charAt(0).toUpperCase()}
+              {hasVoiceUsers && <div className="server-voice-indicator"></div>}
+            </div>
+          );
+        })}
         <div className="server-icon add-server" onClick={() => setShowCreateServer(true)}>
           <span>+</span>
         </div>
