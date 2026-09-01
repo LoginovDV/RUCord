@@ -93,6 +93,9 @@ app.post('/api/servers', authenticateToken, async (req, res) => {
     await run('INSERT INTO channels (id, name, type, serverid) VALUES ($1, $2, $3, $4)', [channelId, 'general', 'text', serverId]);
     await run('INSERT INTO server_members (id, userid, serverid, role) VALUES ($1, $2, $3, $4)', [uuidv4(), req.user.id, serverId, 'owner']);
     const srv = await get('SELECT * FROM servers WHERE id = $1', [serverId]);
+    const channel = await get('SELECT * FROM channels WHERE id = $1', [channelId]);
+    io.emit('server_created', srv);
+    io.emit('channel_created', channel);
     res.json(srv);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -203,6 +206,7 @@ app.post('/api/servers/:serverId/channels', authenticateToken, async (req, res) 
     const channelId = uuidv4();
     await run('INSERT INTO channels (id, name, type, serverid) VALUES ($1, $2, $3, $4)', [channelId, name, type, req.params.serverId]);
     const channel = await get('SELECT * FROM channels WHERE id = $1', [channelId]);
+    io.emit('channel_created', channel);
     res.json(channel);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -246,6 +250,10 @@ app.post('/api/friends/add', authenticateToken, async (req, res) => {
     );
     if (existing) return res.status(400).json({ error: 'Friend request already exists' });
     await run('INSERT INTO friends (id, userid, friendid, status) VALUES ($1, $2, $3, $4)', [uuidv4(), req.user.id, friend.id, 'accepted']);
+    const targetSocketId = users.get(friend.id);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('friend_added');
+    }
     res.json({ message: 'Friend added' });
   } catch (error) {
     res.status(500).json({ error: error.message });

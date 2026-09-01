@@ -133,6 +133,28 @@ function Dashboard() {
       });
     });
 
+    socket.on('server_created', (server) => {
+      setServers(prev => {
+        if (prev.find(s => s.id === server.id)) return prev;
+        return [...prev, server];
+      });
+      setAllChannels(prev => {
+        const generalChannel = { id: server.id + '_general', name: 'general', type: 'text', serverId: server.id };
+        return [...prev, generalChannel];
+      });
+    });
+
+    socket.on('channel_created', (channel) => {
+      setAllChannels(prev => {
+        if (prev.find(c => c.id === channel.id)) return prev;
+        return [...prev, channel];
+      });
+    });
+
+    socket.on('friend_added', () => {
+      loadFriends();
+    });
+
     return () => {
       socket.off('new_message');
       socket.off('user_typing');
@@ -141,6 +163,9 @@ function Dashboard() {
       socket.off('voice_users_update');
       socket.off('all_voice_channels_update');
       socket.off('user_speaking');
+      socket.off('server_created');
+      socket.off('channel_created');
+      socket.off('friend_added');
     };
   }, []);
 
@@ -257,6 +282,7 @@ function Dashboard() {
         type: newChannelType 
       });
       setChannels([...channels, res.data]);
+      setAllChannels(prev => [...prev, res.data]);
       setShowCreateChannel(false);
       setNewChannelName('');
       setNewChannelType('text');
@@ -333,9 +359,25 @@ function Dashboard() {
   const handleJoinVoiceChannel = (channelId) => {
     if (connectedVoiceChannel) {
       socket.emit('leave_voice_channel', { channelId: connectedVoiceChannel, userId: user.id });
+      setAllVoiceChannels(prev => {
+        const next = { ...prev };
+        if (next[connectedVoiceChannel]) {
+          next[connectedVoiceChannel] = next[connectedVoiceChannel].filter(vu => vu.userId !== user.id);
+          if (next[connectedVoiceChannel].length === 0) delete next[connectedVoiceChannel];
+        }
+        return next;
+      });
     }
     setConnectedVoiceChannel(channelId);
     socket.emit('join_voice_channel', { channelId, userId: user.id });
+    setAllVoiceChannels(prev => {
+      const next = { ...prev };
+      if (!next[channelId]) next[channelId] = [];
+      if (!next[channelId].find(vu => vu.userId === user.id)) {
+        next[channelId] = [...next[channelId], { userId: user.id, username: user.username }];
+      }
+      return next;
+    });
   };
 
   const handleLeaveVoiceChannel = () => {
