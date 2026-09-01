@@ -165,7 +165,11 @@
 
 /* Friends Section */
 .friends-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   padding: 16px;
+  overflow-y: auto;
 }
 
 .add-friend-form {
@@ -176,11 +180,17 @@
 
 .add-friend-form input {
   flex: 1;
-  padding: 8px;
+  min-width: 0;
+  padding: 8px 12px;
   border: none;
   border-radius: 4px;
   background-color: #202225;
   color: #dcddde;
+  font-size: 14px;
+}
+
+.add-friend-form input::placeholder {
+  color: #72767d;
 }
 
 .add-friend-form button {
@@ -190,12 +200,27 @@
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.add-friend-form button:hover {
+  background-color: #4752c4;
+}
+
+.friends-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #72767d;
+  text-transform: uppercase;
+  margin-bottom: 8px;
 }
 
 .friends-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 2px;
 }
 
 .friend-item {
@@ -211,11 +236,36 @@
   background-color: #34373c;
 }
 
+.friend-avatar-small {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #5865f2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: 600;
+  font-size: 14px;
+  color: #fff;
+  flex-shrink: 0;
+  position: relative;
+}
+
 .friend-status {
   width: 12px;
   height: 12px;
   border-radius: 50%;
   background-color: #747f8d;
+  flex-shrink: 0;
+  margin-left: -18px;
+  margin-bottom: -18px;
+  border: 3px solid #2f3136;
+  position: relative;
+  z-index: 1;
+}
+
+.friend-item:hover .friend-status {
+  border-color: #34373c;
 }
 
 .friend-status.online {
@@ -228,6 +278,30 @@
 
 .friend-status.dnd {
   background-color: #ed4245;
+}
+
+.friend-item-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.friend-item-name {
+  color: #dcddde;
+  font-size: 14px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.friend-item-status {
+  font-size: 12px;
+  color: #72767d;
+}
+
+.friend-item-status.online {
+  color: #3ba55c;
 }
 
 /* User Panel */

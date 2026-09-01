@@ -306,17 +306,22 @@ function Dashboard() {
             <div className="add-friend-form">
               <input
                 type="text"
-                placeholder="Add friend by username"
+                placeholder="Add by username"
                 value={newFriendUsername}
                 onChange={(e) => setNewFriendUsername(e.target.value)}
               />
               <button onClick={handleAddFriend}>Add</button>
             </div>
+            <div className="friends-label">Friends — {friends.length}</div>
             <div className="friends-list">
               {friends.map(friend => (
                 <div key={friend.id} className="friend-item">
+                  <div className="friend-avatar-small">{friend.username.charAt(0).toUpperCase()}</div>
                   <div className={`friend-status ${friend.status}`}></div>
-                  <span>{friend.username}</span>
+                  <div className="friend-item-info">
+                    <span className="friend-item-name">{friend.username}</span>
+                    <span className={`friend-item-status ${friend.status}`}>{friend.status}</span>
+                  </div>
                 </div>
               ))}
             </div>
