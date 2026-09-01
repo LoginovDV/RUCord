@@ -295,6 +295,8 @@ io.on('connection', (socket) => {
     await run('INSERT INTO voice_channels (id, channelid, userid, socketid) VALUES ($1, $2, $3, $4)', [uuidv4(), channelId, userId, socket.id]);
     const voiceUsers = await all('SELECT vc.*, u.username FROM voice_channels vc INNER JOIN users u ON vc.userid = u.id WHERE vc.channelid = $1', [channelId]);
     io.to(`voice_${channelId}`).emit('voice_users_update', voiceUsers);
+    const allVoiceState = await all('SELECT channelid, userid FROM voice_channels');
+    io.emit('all_voice_channels_update', allVoiceState);
   });
 
   socket.on('leave_voice_channel', async (data) => {
@@ -303,6 +305,13 @@ io.on('connection', (socket) => {
     await run('DELETE FROM voice_channels WHERE channelid = $1 AND userid = $2', [channelId, userId]);
     const voiceUsers = await all('SELECT vc.*, u.username FROM voice_channels vc INNER JOIN users u ON vc.userid = u.id WHERE vc.channelid = $1', [channelId]);
     io.to(`voice_${channelId}`).emit('voice_users_update', voiceUsers);
+    const allVoiceState = await all('SELECT channelid, userid FROM voice_channels');
+    io.emit('all_voice_channels_update', allVoiceState);
+  });
+
+  socket.on('user_speaking', (data) => {
+    const { channelId, userId, speaking } = data;
+    socket.to(`voice_${channelId}`).emit('user_speaking', { userId, speaking });
   });
 
   // WebRTC signaling

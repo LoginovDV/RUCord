@@ -9,7 +9,7 @@ const ICE_SERVERS = {
   ]
 };
 
-function VoiceChannel({ channelId, voiceUsers, onLeave, remoteScreen, onRemoteScreenChange, onLocalScreenChange, isMuted, setIsMuted, isDeafened, setIsDeafened, onToggleMute, onToggleDeafen }) {
+function VoiceChannel({ channelId, voiceUsers, onLeave, remoteScreen, onRemoteScreenChange, onLocalScreenChange, isMuted, setIsMuted, isDeafened, setIsDeafened, onToggleMute, onToggleDeafen, speakingUsers }) {
   const { user } = useAuth();
   const socket = useSocket();
   const [audioReady, setAudioReady] = useState(false);
@@ -151,6 +151,47 @@ function VoiceChannel({ channelId, voiceUsers, onLeave, remoteScreen, onRemoteSc
       Object.keys(peerConnectionsRef.current).forEach(id => removePeerConnection(id));
     };
   }, []);
+
+  useEffect(() => {
+    if (!audioReady || !localStreamRef.current || isMuted) return;
+
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const analyser = audioContext.createAnalyser();
+    const source = audioContext.createMediaStreamSource(localStreamRef.current);
+    source.connect(analyser);
+    analyser.fftSize = 512;
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+    let speakingTimeout = null;
+    let isSpeaking = false;
+
+    const checkLevel = () => {
+      analyser.getByteFrequencyData(dataArray);
+      let sum = 0;
+      for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+      const avg = sum / dataArray.length;
+
+      if (avg > 15 && !isSpeaking) {
+        isSpeaking = true;
+        socket.emit('user_speaking', { channelId, userId: user.id, speaking: true });
+      } else if (avg <= 15 && isSpeaking) {
+        if (speakingTimeout) clearTimeout(speakingTimeout);
+        speakingTimeout = setTimeout(() => {
+          isSpeaking = false;
+          socket.emit('user_speaking', { channelId, userId: user.id, speaking: false });
+        }, 800);
+      }
+    };
+
+    const interval = setInterval(checkLevel, 150);
+
+    return () => {
+      clearInterval(interval);
+      if (speakingTimeout) clearTimeout(speakingTimeout);
+      audioContext.close();
+      socket.emit('user_speaking', { channelId, userId: user.id, speaking: false });
+    };
+  }, [audioReady, isMuted, channelId, user.id, socket]);
 
   useEffect(() => {
     if (!audioReady || !localStreamRef.current) return;
@@ -361,8 +402,13 @@ function VoiceChannel({ channelId, voiceUsers, onLeave, remoteScreen, onRemoteSc
       <div className="voice-users-list">
         {uniqueUsers.map(vu => (
           <div key={vu.userId} className="voice-user">
-            <div className="voice-user-avatar">{vu.username?.charAt(0).toUpperCase()}</div>
+            <div className={`voice-user-avatar ${speakingUsers && speakingUsers[vu.userId] ? 'speaking' : ''}`}>
+              {vu.username?.charAt(0).toUpperCase()}
+            </div>
             <span className="voice-user-name">{vu.username}</span>
+            {speakingUsers && speakingUsers[vu.userId] && (
+              <span className="speaking-indicator"></span>
+            )}
           </div>
         ))}
       </div>

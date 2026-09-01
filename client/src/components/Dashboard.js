@@ -41,6 +41,8 @@ function Dashboard() {
   const [localScreenStream, setLocalScreenStream] = useState(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isDeafened, setIsDeafened] = useState(false);
+  const [allVoiceChannels, setAllVoiceChannels] = useState({});
+  const [speakingUsers, setSpeakingUsers] = useState({});
   const toggleMuteRef = useRef(null);
   const toggleDeafenRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -98,12 +100,35 @@ function Dashboard() {
       setVoiceUsers(users);
     });
 
+    socket.on('all_voice_channels_update', (channelUsers) => {
+      const grouped = {};
+      channelUsers.forEach(({ channelid, userid }) => {
+        if (!grouped[channelid]) grouped[channelid] = [];
+        grouped[channelid].push(userid);
+      });
+      setAllVoiceChannels(grouped);
+    });
+
+    socket.on('user_speaking', ({ userId, speaking }) => {
+      setSpeakingUsers(prev => {
+        const next = { ...prev };
+        if (speaking) {
+          next[userId] = true;
+        } else {
+          delete next[userId];
+        }
+        return next;
+      });
+    });
+
     return () => {
       socket.off('new_message');
       socket.off('user_typing');
       socket.off('user_stop_typing');
       socket.off('user_status_change');
       socket.off('voice_users_update');
+      socket.off('all_voice_channels_update');
+      socket.off('user_speaking');
     };
   }, []);
 
@@ -400,15 +425,24 @@ function Dashboard() {
                 <span>Voice Channels</span>
                 <button className="add-channel-btn" onClick={() => { setNewChannelType('voice'); setShowCreateChannel(true); }}>+</button>
               </div>
-              {channels.filter(ch => ch.type === 'voice').map(channel => (
-                <div
-                  key={channel.id}
-                  className={`channel-item voice-channel ${connectedVoiceChannel === channel.id ? 'connected' : ''}`}
-                  onClick={() => handleJoinVoiceChannel(channel.id)}
-                >
-                  🔊 {channel.name}
-                </div>
-              ))}
+              {channels.filter(ch => ch.type === 'voice').map(channel => {
+                const usersInChannel = allVoiceChannels[channel.id] || [];
+                return (
+                  <div
+                    key={channel.id}
+                    className={`channel-item voice-channel ${connectedVoiceChannel === channel.id ? 'connected' : ''} ${usersInChannel.length > 0 ? 'has-users' : ''}`}
+                    onClick={() => handleJoinVoiceChannel(channel.id)}
+                  >
+                    <span className="voice-channel-icon">
+                      {usersInChannel.length > 0 ? '🟢' : '🔊'}
+                    </span>
+                    <span className="voice-channel-name">{channel.name}</span>
+                    {usersInChannel.length > 0 && (
+                      <span className="voice-channel-count">{usersInChannel.length}</span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </>
         )}
@@ -428,6 +462,7 @@ function Dashboard() {
             setIsDeafened={setIsDeafened}
             onToggleMute={toggleMuteRef}
             onToggleDeafen={toggleDeafenRef}
+            speakingUsers={speakingUsers}
           />
         )}
 

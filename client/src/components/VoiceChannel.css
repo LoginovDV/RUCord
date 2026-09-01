@@ -43,11 +43,38 @@
   align-items: center;
   font-weight: 600;
   font-size: 12px;
+  position: relative;
+  transition: box-shadow 0.15s;
+}
+
+.voice-user-avatar.speaking {
+  box-shadow: 0 0 0 2px #3ba55c;
+  animation: speaking-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes speaking-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px #3ba55c; }
+  50% { box-shadow: 0 0 0 4px rgba(59, 165, 92, 0.4); }
+}
+
+.speaking-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #3ba55c;
+  animation: speaking-dot 1.2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes speaking-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.7); }
 }
 
 .voice-user-name {
   font-size: 14px;
   color: #dcddde;
+  flex: 1;
 }
 
 .voice-controls {
