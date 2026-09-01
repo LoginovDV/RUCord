@@ -363,7 +363,7 @@ function Dashboard() {
         )}
 
         {/* Voice Channel Panel */}
-        {connectedVoiceChannel && activeTab !== 'friends' && (
+        {connectedVoiceChannel && (
           <VoiceChannel
             channelId={connectedVoiceChannel}
             voiceUsers={voiceUsers}
