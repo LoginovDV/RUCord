@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  rucord:
+    build: .
+    ports:
+      - "80:3001"
+    volumes:
+      - rucord-data:/app/server/data
+    restart: unless-stopped
+
+volumes:
+  rucord-data:

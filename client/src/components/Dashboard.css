@@ -1,0 +1,658 @@
+.dashboard {
+  display: flex;
+  height: 100vh;
+  background-color: #36393f;
+}
+
+/* Servers Sidebar */
+.servers-sidebar {
+  width: 72px;
+  background-color: #202225;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 0;
+  gap: 8px;
+}
+
+.server-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: #36393f;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: border-radius 0.2s, background-color 0.2s;
+  color: #fff;
+  font-weight: 600;
+}
+
+.server-icon:hover {
+  border-radius: 16px;
+  background-color: #5865f2;
+}
+
+.server-icon.selected {
+  border-radius: 16px;
+  background-color: #5865f2;
+}
+
+.home-icon {
+  background-color: #5865f2;
+}
+
+.server-divider {
+  width: 32px;
+  height: 2px;
+  background-color: #36393f;
+  margin: 4px 0;
+}
+
+.add-server {
+  background-color: transparent;
+  border: 1px dashed #3ba55c;
+  color: #3ba55c;
+}
+
+.add-server:hover {
+  background-color: #3ba55c;
+  color: #fff;
+}
+
+/* Channels Sidebar */
+.channels-sidebar {
+  width: 240px;
+  background-color: #2f3136;
+  display: flex;
+  flex-direction: column;
+}
+
+.channels-header {
+  padding: 16px;
+  border-bottom: 1px solid #202225;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.channels-header h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+}
+
+.header-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.header-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  border: none;
+  background-color: #36393f;
+  color: #b9bbbe;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.header-btn:hover {
+  background-color: #5865f2;
+  color: #fff;
+}
+
+.channels-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.channel-category {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 8px 4px 16px;
+  color: #8e9297;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.add-channel-btn {
+  background: none;
+  border: none;
+  color: #8e9297;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.add-channel-btn:hover {
+  color: #fff;
+}
+
+.channel-item {
+  padding: 8px 16px;
+  color: #8e9297;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.channel-item:hover {
+  background-color: #34373c;
+  color: #dcddde;
+}
+
+.channel-item.selected {
+  background-color: #393c43;
+  color: #fff;
+}
+
+.voice-channel {
+  color: #3ba55c;
+}
+
+.voice-channel.connected {
+  background-color: #3ba55c;
+  color: #fff;
+}
+
+/* Friends Section */
+.friends-section {
+  padding: 16px;
+}
+
+.add-friend-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.add-friend-form input {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  border-radius: 4px;
+  background-color: #202225;
+  color: #dcddde;
+}
+
+.add-friend-form button {
+  padding: 8px 16px;
+  background-color: #5865f2;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.friends-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.friend-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.friend-item:hover {
+  background-color: #34373c;
+}
+
+.friend-status {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: #747f8d;
+}
+
+.friend-status.online {
+  background-color: #3ba55c;
+}
+
+.friend-status.idle {
+  background-color: #faa61a;
+}
+
+.friend-status.dnd {
+  background-color: #ed4245;
+}
+
+/* User Panel */
+.user-panel {
+  padding: 8px;
+  background-color: #292b2f;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #5865f2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.username {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.user-status {
+  font-size: 12px;
+  color: #3ba55c;
+}
+
+.logout-btn {
+  background: none;
+  border: none;
+  color: #b9bbbe;
+  cursor: pointer;
+  font-size: 20px;
+  padding: 4px 8px;
+}
+
+.logout-btn:hover {
+  color: #ed4245;
+}
+
+/* Chat Area */
+.chat-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: #36393f;
+}
+
+.chat-header {
+  height: 48px;
+  padding: 0 16px;
+  border-bottom: 1px solid #202225;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.channel-name {
+  font-weight: 600;
+  color: #fff;
+}
+
+.messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.message {
+  display: flex;
+  gap: 16px;
+}
+
+.message-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #5865f2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.message-content {
+  flex: 1;
+}
+
+.message-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.message-author {
+  font-weight: 600;
+  color: #fff;
+}
+
+.message-time {
+  font-size: 12px;
+  color: #72767d;
+}
+
+.message-text {
+  color: #dcddde;
+  line-height: 1.4;
+}
+
+.typing-indicator {
+  padding: 8px 16px;
+  color: #b9bbbe;
+  font-size: 14px;
+  font-style: italic;
+}
+
+.message-form {
+  padding: 16px;
+  display: flex;
+  gap: 8px;
+}
+
+.message-form input {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 4px;
+  background-color: #40444b;
+  color: #dcddde;
+  font-size: 16px;
+}
+
+.message-form input:focus {
+  outline: none;
+}
+
+.message-form button {
+  padding: 12px 24px;
+  background-color: #5865f2;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.message-form button:hover {
+  background-color: #4752c4;
+}
+
+.no-channel-selected {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #72767d;
+}
+
+.no-channel-selected h2 {
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+/* Members Sidebar */
+.members-sidebar {
+  width: 240px;
+  background-color: #2f3136;
+  display: flex;
+  flex-direction: column;
+}
+
+.members-header {
+  padding: 16px;
+  border-bottom: 1px solid #202225;
+  height: 48px;
+  display: flex;
+  align-items: center;
+}
+
+.members-header h3 {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8e9297;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.members-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.member-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 4px;
+}
+
+.member-item:hover {
+  background-color: #34373c;
+}
+
+.member-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #5865f2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.member-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.member-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.member-status {
+  font-size: 12px;
+  color: #72767d;
+}
+
+.member-status.online {
+  color: #3ba55c;
+}
+
+/* Friends Page */
+.friends-page {
+  padding: 24px;
+}
+
+.friends-page h2 {
+  color: #fff;
+  margin-bottom: 24px;
+}
+
+.friends-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+.friend-card {
+  background-color: #2f3136;
+  padding: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.friend-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: #5865f2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.friend-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.friend-name {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.friend-status-text {
+  font-size: 14px;
+  color: #72767d;
+}
+
+.friend-status-text.online {
+  color: #3ba55c;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.modal {
+  background-color: #36393f;
+  padding: 24px;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.modal h2 {
+  margin-bottom: 16px;
+  color: #fff;
+}
+
+.modal input {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 4px;
+  background-color: #202225;
+  color: #dcddde;
+  font-size: 16px;
+  margin-bottom: 16px;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.modal-buttons button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.modal-buttons button:first-child {
+  background-color: transparent;
+  color: #b9bbbe;
+}
+
+.modal-buttons button:last-child {
+  background-color: #5865f2;
+  color: #fff;
+}
+
+.channel-type-selector {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.channel-type-selector label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 10px 16px;
+  background-color: #202225;
+  border-radius: 4px;
+  flex: 1;
+  justify-content: center;
+}
+
+.channel-type-selector label:hover {
+  background-color: #2f3136;
+}
+
+.channel-type-selector input[type="radio"] {
+  display: none;
+}
+
+.channel-type-selector input[type="radio"]:checked + span {
+  color: #5865f2;
+  font-weight: 600;
+}
+
+.channel-type-selector span {
+  color: #b9bbbe;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #2f3136;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #202225;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #1a1b1e;
+}

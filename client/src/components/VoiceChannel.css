@@ -1,0 +1,97 @@
+.voice-channel-panel {
+  background-color: #292b2f;
+  padding: 12px;
+  border-top: 1px solid #202225;
+}
+
+.voice-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  color: #3ba55c;
+  font-weight: 600;
+}
+
+.voice-icon {
+  font-size: 18px;
+}
+
+.voice-users-list {
+  padding: 8px 0;
+}
+
+.voice-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 4px;
+}
+
+.voice-user:hover {
+  background-color: #34373c;
+}
+
+.voice-user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: #5865f2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.voice-user-name {
+  font-size: 14px;
+  color: #dcddde;
+}
+
+.voice-controls {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-top: 1px solid #202225;
+}
+
+.voice-control-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background-color: #36393f;
+  color: #dcddde;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background-color 0.2s;
+}
+
+.voice-control-btn:hover {
+  background-color: #40444b;
+}
+
+.voice-control-btn.muted {
+  background-color: #ed4245;
+  color: #fff;
+}
+
+.voice-control-btn.deafened {
+  background-color: #ed4245;
+  color: #fff;
+}
+
+.voice-control-btn.disconnect {
+  background-color: #ed4245;
+  color: #fff;
+}
+
+.voice-control-btn.disconnect:hover {
+  background-color: #c03537;
+}
