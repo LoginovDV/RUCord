@@ -103,9 +103,9 @@ function Dashboard() {
 
     socket.on('all_voice_channels_update', (channelUsers) => {
       const grouped = {};
-      channelUsers.forEach(({ channelid, userid, username }) => {
-        if (!grouped[channelid]) grouped[channelid] = [];
-        grouped[channelid].push({ userid, username });
+      channelUsers.forEach(({ channelId, userId, username }) => {
+        if (!grouped[channelId]) grouped[channelId] = [];
+        grouped[channelId].push({ userId, username });
       });
       setAllVoiceChannels(grouped);
     });
@@ -183,9 +183,9 @@ function Dashboard() {
     try {
       const res = await axios.get(`${API_URL}/api/voice-channels`);
       const grouped = {};
-      res.data.forEach(({ channelid, userid, username }) => {
-        if (!grouped[channelid]) grouped[channelid] = [];
-        grouped[channelid].push({ userid, username });
+      res.data.forEach(({ channelId, userId, username }) => {
+        if (!grouped[channelId]) grouped[channelId] = [];
+        grouped[channelId].push({ userId, username });
       });
       setAllVoiceChannels(grouped);
     } catch (error) {
@@ -454,8 +454,8 @@ function Dashboard() {
                       <span className="voice-channel-name">{channel.name}</span>
                     </div>
                     {usersInChannel.map(vu => (
-                      <div key={vu.userid} className="voice-channel-user">
-                        <div className={`voice-channel-user-avatar ${speakingUsers && speakingUsers[vu.userid] ? 'speaking' : ''}`}>
+                      <div key={vu.userId} className="voice-channel-user">
+                        <div className={`voice-channel-user-avatar ${speakingUsers && speakingUsers[vu.userId] ? 'speaking' : ''}`}>
                           {vu.username?.charAt(0).toUpperCase()}
                         </div>
                         <span className="voice-channel-user-name">{vu.username}</span>
