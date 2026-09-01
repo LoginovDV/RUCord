@@ -221,7 +221,123 @@ app.post('/api/servers/:serverId/channels', authenticateToken, async (req, res) 
   }
 });
 
-// Message routes
+// Category routes
+app.get('/api/servers/:serverId/categories', authenticateToken, async (req, res) => {
+  const categories = await all('SELECT * FROM categories WHERE serverid = $1 ORDER BY "order"', [req.params.serverId]);
+  res.json(categories);
+});
+
+app.post('/api/servers/:serverId/categories', authenticateToken, async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name || !name.trim()) return res.status(400).json({ error: 'Name is required' });
+    const server = await get('SELECT * FROM servers WHERE id = $1', [req.params.serverId]);
+    if (!server) return res.status(404).json({ error: 'Server not found' });
+    const serverOwnerId = server.ownerId || server.ownerid;
+    if (serverOwnerId !== req.user.id) return res.status(403).json({ error: 'Only the server owner can create categories' });
+    const categoryId = uuidv4();
+    const maxOrder = await get('SELECT MAX("order") as maxorder FROM categories WHERE serverid = $1', [req.params.serverId]);
+    await run('INSERT INTO categories (id, name, serverid, "order") VALUES ($1, $2, $3, $4)', [categoryId, name.trim(), req.params.serverId, (maxOrder?.maxorder || 0) + 1]);
+    const category = await get('SELECT * FROM categories WHERE id = $1', [categoryId]);
+    io.emit('category_created', category);
+    res.json(category);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/categories/:categoryId', authenticateToken, async (req, res) => {
+  try {
+    const { name } = req.body;
+    const category = await get('SELECT * FROM categories WHERE id = $1', [req.params.categoryId]);
+    if (!category) return res.status(404).json({ error: 'Category not found' });
+    const server = await get('SELECT * FROM servers WHERE id = $1', [category.serverid]);
+    const serverOwnerId = server.ownerId || server.ownerid;
+    if (serverOwnerId !== req.user.id) return res.status(403).json({ error: 'Only the server owner can edit categories' });
+    await run('UPDATE categories SET name = $1 WHERE id = $2', [name.trim(), req.params.categoryId]);
+    const updated = await get('SELECT * FROM categories WHERE id = $1', [req.params.categoryId]);
+    io.emit('category_updated', updated);
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/categories/:categoryId', authenticateToken, async (req, res) => {
+  try {
+    const category = await get('SELECT * FROM categories WHERE id = $1', [req.params.categoryId]);
+    if (!category) return res.status(404).json({ error: 'Category not found' });
+    const server = await get('SELECT * FROM servers WHERE id = $1', [category.serverid]);
+    const serverOwnerId = server.ownerId || server.ownerid;
+    if (serverOwnerId !== req.user.id) return res.status(403).json({ error: 'Only the server owner can delete categories' });
+    await run('UPDATE channels SET "categoryId" = NULL WHERE "categoryId" = $1', [req.params.categoryId]);
+    await run('DELETE FROM categories WHERE id = $1', [req.params.categoryId]);
+    io.emit('category_deleted', { id: req.params.categoryId, serverId: category.serverid });
+    res.json({ message: 'Category deleted' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Channel edit/delete routes
+app.put('/api/channels/:channelId', authenticateToken, async (req, res) => {
+  try {
+    const { name, description } = req.body;
+    const channel = await get('SELECT * FROM channels WHERE id = $1', [req.params.channelId]);
+    if (!channel) return res.status(404).json({ error: 'Channel not found' });
+    const server = await get('SELECT * FROM servers WHERE id = $1', [channel.serverid]);
+    const serverOwnerId = server.ownerId || server.ownerid;
+    if (serverOwnerId !== req.user.id) return res.status(403).json({ error: 'Only the server owner can edit channels' });
+    if (name !== undefined) {
+      const existing = await get('SELECT * FROM channels WHERE name = $1 AND serverid = $2 AND id != $3', [name.trim(), channel.serverid, req.params.channelId]);
+      if (existing) return res.status(400).json({ error: 'Channel name already exists' });
+      await run('UPDATE channels SET name = $1 WHERE id = $2', [name.trim(), req.params.channelId]);
+    }
+    if (description !== undefined) {
+      await run('UPDATE channels SET description = $1 WHERE id = $2', [description, req.params.channelId]);
+    }
+    if (req.body.categoryId !== undefined) {
+      await run('UPDATE channels SET "categoryId" = $1 WHERE id = $2', [req.body.categoryId, req.params.channelId]);
+    }
+    const updated = await get('SELECT * FROM channels WHERE id = $1', [req.params.channelId]);
+    io.emit('channel_updated', updated);
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/channels/:channelId/avatar', authenticateToken, async (req, res) => {
+  try {
+    const channel = await get('SELECT * FROM channels WHERE id = $1', [req.params.channelId]);
+    if (!channel) return res.status(404).json({ error: 'Channel not found' });
+    const server = await get('SELECT * FROM servers WHERE id = $1', [channel.serverid]);
+    const serverOwnerId = server.ownerId || server.ownerid;
+    if (serverOwnerId !== req.user.id) return res.status(403).json({ error: 'Only the server owner can edit channels' });
+    const { avatar } = req.body;
+    await run('UPDATE channels SET avatar = $1 WHERE id = $2', [avatar, req.params.channelId]);
+    const updated = await get('SELECT * FROM channels WHERE id = $1', [req.params.channelId]);
+    io.emit('channel_updated', updated);
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/channels/:channelId', authenticateToken, async (req, res) => {
+  try {
+    const channel = await get('SELECT * FROM channels WHERE id = $1', [req.params.channelId]);
+    if (!channel) return res.status(404).json({ error: 'Channel not found' });
+    const server = await get('SELECT * FROM servers WHERE id = $1', [channel.serverid]);
+    const serverOwnerId = server.ownerId || server.ownerid;
+    if (serverOwnerId !== req.user.id) return res.status(403).json({ error: 'Only the server owner can delete channels' });
+    await run('DELETE FROM channels WHERE id = $1', [req.params.channelId]);
+    io.emit('channel_deleted', { id: req.params.channelId, serverId: channel.serverid });
+    res.json({ message: 'Channel deleted' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 app.get('/api/channels/:channelId/messages', authenticateToken, async (req, res) => {
   const messages = await all(`
     SELECT m.*, u.username, u.avatar
