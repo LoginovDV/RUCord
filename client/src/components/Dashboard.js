@@ -448,10 +448,9 @@ function Dashboard() {
                       className={`channel-item voice-channel ${connectedVoiceChannel === channel.id ? 'connected' : ''} ${usersInChannel.length > 0 ? 'has-users' : ''}`}
                       onClick={() => handleJoinVoiceChannel(channel.id)}
                     >
-                      <svg className="voice-channel-svg-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 3a1 1 0 0 0-1-1h-.06a1 1 0 0 0-.74.32L5.92 7H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2.92l4.28 4.68a1 1 0 0 0 .74.32H11a1 1 0 0 0 1-1V3ZM15.1 20.75c-.58.14-1.1-.33-1.1-.92v-.03c0-.42.29-.77.67-.9a7.006 7.006 0 0 0 0-13.08.93.93 0 0 1-.67-.9v-.03c0-.6.52-1.06 1.1-.92a9.006 9.006 0 0 1 0 16.78Z"/>
-                        <path d="M15.16 16.51c-.57.28-1.16-.2-1.16-.83v-.14c0-.43.28-.8.63-1.02a3.006 3.006 0 0 0 0-5.04c-.35-.23-.63-.6-.63-1.02v-.14c0-.63.59-1.1 1.16-.83a5.006 5.006 0 0 1 0 9.02Z"/>
-                      </svg>
+                      <span className={`voice-channel-icon ${usersInChannel.length > 0 ? 'active' : ''}`}>
+                        {usersInChannel.length > 0 ? '🟢' : '🔊'}
+                      </span>
                       <span className="voice-channel-name">{channel.name}</span>
                     </div>
                     {usersInChannel.map(vu => (
