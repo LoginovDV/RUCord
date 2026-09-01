@@ -503,6 +503,14 @@ io.on('connection', (socket) => {
     socket.to(`voice_${channelId}`).emit('screen_share_stop', { from });
   });
 
+  socket.on('screen_request', (data) => {
+    const { to, from } = data;
+    const targetSocketId = users.get(to);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('screen_request', { from });
+    }
+  });
+
   socket.on('screen_offer', (data) => {
     const { to, offer, from } = data;
     const targetSocketId = users.get(to);

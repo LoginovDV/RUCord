@@ -244,6 +244,7 @@ function VoiceChannel({ channelId, voiceUsers, onLeave, remoteScreen, onRemoteSc
 
     const handleScreenShareStart = ({ from }) => {
       onRemoteScreenChange({ peerId: from, stream: null });
+      socket.emit('screen_request', { to: from, from: user.id });
     };
 
     const handleScreenShareStop = ({ from }) => {
@@ -286,11 +287,18 @@ function VoiceChannel({ channelId, voiceUsers, onLeave, remoteScreen, onRemoteSc
       }
     };
 
+    const handleScreenRequest = ({ from }) => {
+      if (screenStreamRef.current) {
+        createScreenPeer(from, screenStreamRef.current, true);
+      }
+    };
+
     socket.on('voice_offer', handleVoiceOffer);
     socket.on('voice_answer', handleVoiceAnswer);
     socket.on('voice_ice_candidate', handleIceCandidate);
     socket.on('screen_share_start', handleScreenShareStart);
     socket.on('screen_share_stop', handleScreenShareStop);
+    socket.on('screen_request', handleScreenRequest);
     socket.on('screen_offer', handleScreenOffer);
     socket.on('screen_answer', handleScreenAnswer);
     socket.on('screen_ice_candidate', handleScreenIceCandidate);
@@ -301,6 +309,7 @@ function VoiceChannel({ channelId, voiceUsers, onLeave, remoteScreen, onRemoteSc
       socket.off('voice_ice_candidate', handleIceCandidate);
       socket.off('screen_share_start', handleScreenShareStart);
       socket.off('screen_share_stop', handleScreenShareStop);
+      socket.off('screen_request', handleScreenRequest);
       socket.off('screen_offer', handleScreenOffer);
       socket.off('screen_answer', handleScreenAnswer);
       socket.off('screen_ice_candidate', handleScreenIceCandidate);
