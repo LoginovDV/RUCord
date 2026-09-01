@@ -278,11 +278,11 @@ app.put('/api/channels/:channelId', authenticateToken, async (req, res) => {
     const { name, description } = req.body;
     const channel = await get('SELECT * FROM channels WHERE id = $1', [req.params.channelId]);
     if (!channel) return res.status(404).json({ error: 'Channel not found' });
-    const server = await get('SELECT * FROM servers WHERE id = $1', [channel.serverid]);
-    const serverOwnerId = server.ownerId || server.ownerid;
-    if (serverOwnerId !== req.user.id) return res.status(403).json({ error: 'Only the server owner can edit channels' });
+    const server = await get('SELECT * FROM servers WHERE id = $1', [channel.serverId]);
+    if (!server) return res.status(404).json({ error: 'Server not found' });
+    if (server.ownerId !== req.user.id) return res.status(403).json({ error: 'Only the server owner can edit channels' });
     if (name !== undefined) {
-      const existing = await get('SELECT * FROM channels WHERE name = $1 AND serverid = $2 AND id != $3', [name.trim(), channel.serverid, req.params.channelId]);
+      const existing = await get('SELECT * FROM channels WHERE name = $1 AND serverid = $2 AND id != $3', [name.trim(), channel.serverId, req.params.channelId]);
       if (existing) return res.status(400).json({ error: 'Channel name already exists' });
       await run('UPDATE channels SET name = $1 WHERE id = $2', [name.trim(), req.params.channelId]);
     }
@@ -301,9 +301,9 @@ app.put('/api/channels/:channelId/avatar', authenticateToken, async (req, res) =
   try {
     const channel = await get('SELECT * FROM channels WHERE id = $1', [req.params.channelId]);
     if (!channel) return res.status(404).json({ error: 'Channel not found' });
-    const server = await get('SELECT * FROM servers WHERE id = $1', [channel.serverid]);
-    const serverOwnerId = server.ownerId || server.ownerid;
-    if (serverOwnerId !== req.user.id) return res.status(403).json({ error: 'Only the server owner can edit channels' });
+    const server = await get('SELECT * FROM servers WHERE id = $1', [channel.serverId]);
+    if (!server) return res.status(404).json({ error: 'Server not found' });
+    if (server.ownerId !== req.user.id) return res.status(403).json({ error: 'Only the server owner can edit channels' });
     const { avatar } = req.body;
     await run('UPDATE channels SET avatar = $1 WHERE id = $2', [avatar, req.params.channelId]);
     const updated = await get('SELECT * FROM channels WHERE id = $1', [req.params.channelId]);
@@ -318,11 +318,11 @@ app.delete('/api/channels/:channelId', authenticateToken, async (req, res) => {
   try {
     const channel = await get('SELECT * FROM channels WHERE id = $1', [req.params.channelId]);
     if (!channel) return res.status(404).json({ error: 'Channel not found' });
-    const server = await get('SELECT * FROM servers WHERE id = $1', [channel.serverid]);
-    const serverOwnerId = server.ownerId || server.ownerid;
-    if (serverOwnerId !== req.user.id) return res.status(403).json({ error: 'Only the server owner can delete channels' });
+    const server = await get('SELECT * FROM servers WHERE id = $1', [channel.serverId]);
+    if (!server) return res.status(404).json({ error: 'Server not found' });
+    if (server.ownerId !== req.user.id) return res.status(403).json({ error: 'Only the server owner can delete channels' });
     await run('DELETE FROM channels WHERE id = $1', [req.params.channelId]);
-    io.emit('channel_deleted', { id: req.params.channelId, serverId: channel.serverid });
+    io.emit('channel_deleted', { id: req.params.channelId, serverId: channel.serverId });
     res.json({ message: 'Channel deleted' });
   } catch (error) {
     res.status(500).json({ error: error.message });
