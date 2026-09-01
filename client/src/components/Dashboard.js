@@ -553,9 +553,7 @@ function Dashboard() {
                   onClick={() => setSelectedChannel(channel)}
                   onContextMenu={(e) => {
                     e.preventDefault();
-                    if (selectedServer?.ownerId === user.id) {
-                      setContextMenu({ x: e.clientX, y: e.clientY, channel });
-                    }
+                    setContextMenu({ x: e.clientX, y: e.clientY, channel });
                   }}
                 >
                   {channel.avatar ? (
@@ -584,9 +582,7 @@ function Dashboard() {
                       onClick={() => handleJoinVoiceChannel(channel.id)}
                       onContextMenu={(e) => {
                         e.preventDefault();
-                        if (selectedServer?.ownerId === user.id) {
-                          setContextMenu({ x: e.clientX, y: e.clientY, channel });
-                        }
+                        setContextMenu({ x: e.clientX, y: e.clientY, channel });
                       }}
                     >
                       <span className={`voice-channel-icon ${usersInChannel.length > 0 ? 'active' : ''}`}>
