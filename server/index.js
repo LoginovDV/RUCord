@@ -258,6 +258,8 @@ io.on('connection', (socket) => {
     users.set(userId, socket.id);
     await run('UPDATE users SET status = $1 WHERE id = $2', ['online', userId]);
     io.emit('user_status_change', { userId, status: 'online' });
+    const allVoiceState = await all('SELECT channelid, userid FROM voice_channels');
+    socket.emit('all_voice_channels_update', allVoiceState);
   });
 
   socket.on('join_channel', (channelId) => {

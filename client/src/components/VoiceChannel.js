@@ -19,6 +19,8 @@ function VoiceChannel({ channelId, voiceUsers, onLeave, remoteScreen, onRemoteSc
   const peerConnectionsRef = useRef({});
   const screenPeerConnectionsRef = useRef({});
   const audioElementsRef = useRef({});
+  const socketRef = useRef(socket);
+  socketRef.current = socket;
 
   const hasMedia = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
 
@@ -154,7 +156,9 @@ function VoiceChannel({ channelId, voiceUsers, onLeave, remoteScreen, onRemoteSc
 
   useEffect(() => {
     if (!audioReady || !localStreamRef.current || isMuted) return;
+    if (!channelId || !user.id) return;
 
+    const sock = socketRef.current;
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const analyser = audioContext.createAnalyser();
     const source = audioContext.createMediaStreamSource(localStreamRef.current);
@@ -173,12 +177,12 @@ function VoiceChannel({ channelId, voiceUsers, onLeave, remoteScreen, onRemoteSc
 
       if (avg > 15 && !isSpeaking) {
         isSpeaking = true;
-        socket.emit('user_speaking', { channelId, userId: user.id, speaking: true });
+        sock.emit('user_speaking', { channelId, userId: user.id, speaking: true });
       } else if (avg <= 15 && isSpeaking) {
         if (speakingTimeout) clearTimeout(speakingTimeout);
         speakingTimeout = setTimeout(() => {
           isSpeaking = false;
-          socket.emit('user_speaking', { channelId, userId: user.id, speaking: false });
+          sock.emit('user_speaking', { channelId, userId: user.id, speaking: false });
         }, 800);
       }
     };
@@ -189,9 +193,9 @@ function VoiceChannel({ channelId, voiceUsers, onLeave, remoteScreen, onRemoteSc
       clearInterval(interval);
       if (speakingTimeout) clearTimeout(speakingTimeout);
       audioContext.close();
-      socket.emit('user_speaking', { channelId, userId: user.id, speaking: false });
+      sock.emit('user_speaking', { channelId, userId: user.id, speaking: false });
     };
-  }, [audioReady, isMuted, channelId, user.id, socket]);
+  }, [audioReady, isMuted, channelId, user.id]);
 
   useEffect(() => {
     if (!audioReady || !localStreamRef.current) return;
