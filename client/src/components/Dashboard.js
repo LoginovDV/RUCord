@@ -44,14 +44,10 @@ function Dashboard() {
   const [allVoiceChannels, setAllVoiceChannels] = useState({});
   const [speakingUsers, setSpeakingUsers] = useState({});
   const [allChannels, setAllChannels] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [collapsedCategories, setCollapsedCategories] = useState({});
   const [contextMenu, setContextMenu] = useState(null);
   const [editingChannel, setEditingChannel] = useState(null);
   const [editChannelName, setEditChannelName] = useState('');
   const [editChannelDesc, setEditChannelDesc] = useState('');
-  const [showCreateCategory, setShowCreateCategory] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState('');
   const toggleMuteRef = useRef(null);
   const toggleDeafenRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -78,7 +74,6 @@ function Dashboard() {
       setSelectedChannel(null);
       setMessages([]);
       loadChannels(selectedServer.id);
-      loadCategories(selectedServer.id);
     }
   }, [selectedServer]);
 
@@ -164,21 +159,6 @@ function Dashboard() {
       loadFriends();
     });
 
-    socket.on('category_created', (category) => {
-      setCategories(prev => {
-        if (prev.find(c => c.id === category.id)) return prev;
-        return [...prev, category];
-      });
-    });
-
-    socket.on('category_updated', (category) => {
-      setCategories(prev => prev.map(c => c.id === category.id ? category : c));
-    });
-
-    socket.on('category_deleted', ({ id }) => {
-      setCategories(prev => prev.filter(c => c.id !== id));
-    });
-
     socket.on('channel_updated', (channel) => {
       setChannels(prev => prev.map(c => c.id === channel.id ? channel : c));
       setAllChannels(prev => prev.map(c => c.id === channel.id ? channel : c));
@@ -201,9 +181,6 @@ function Dashboard() {
       socket.off('server_created');
       socket.off('channel_created');
       socket.off('friend_added');
-      socket.off('category_created');
-      socket.off('category_updated');
-      socket.off('category_deleted');
       socket.off('channel_updated');
       socket.off('channel_deleted');
     };
@@ -234,15 +211,6 @@ function Dashboard() {
       }
     } catch (error) {
       console.error('Error loading channels:', error);
-    }
-  };
-
-  const loadCategories = async (serverId) => {
-    try {
-      const res = await axios.get(`${API_URL}/api/servers/${serverId}/categories`);
-      setCategories(res.data);
-    } catch (error) {
-      console.error('Error loading categories:', error);
     }
   };
 
@@ -338,19 +306,6 @@ function Dashboard() {
     } catch (error) {
       console.error('Error creating channel:', error);
       alert('Error: ' + (error.response?.data?.error || error.message));
-    }
-  };
-
-  const handleCreateCategory = async (e) => {
-    e.preventDefault();
-    if (!selectedServer || !newCategoryName.trim()) return;
-    try {
-      const res = await axios.post(`${API_URL}/api/servers/${selectedServer.id}/categories`, { name: newCategoryName.trim() });
-      setCategories([...categories, res.data]);
-      setShowCreateCategory(false);
-      setNewCategoryName('');
-    } catch (error) {
-      alert(error.response?.data?.error || 'Error creating category');
     }
   };
 
@@ -584,129 +539,78 @@ function Dashboard() {
           </div>
         ) : (
           <>
-            {categories.length > 0 ? categories.map(category => (
-              <div key={category.id} className="channels-list">
-                <div className="channel-category" onClick={() => setCollapsedCategories(prev => ({ ...prev, [category.id]: !prev[category.id] }))}>
-                  <span className="category-toggle">{collapsedCategories[category.id] ? '▶' : '▼'}</span>
-                  <span className="category-name">{category.name}</span>
-                  {selectedServer?.ownerId === user.id && (
-                    <button className="add-channel-btn" onClick={(e) => { e.stopPropagation(); setNewChannelType('text'); setShowCreateChannel(true); }}>+</button>
+            <div className="channels-list">
+              <div className="channel-category">
+                <span>Text Channels</span>
+                {selectedServer?.ownerId === user.id && (
+                  <button className="add-channel-btn" onClick={() => setShowCreateChannel(true)}>+</button>
+                )}
+              </div>
+              {channels.filter(ch => ch.type === 'text').map(channel => (
+                <div
+                  key={channel.id}
+                  className={`channel-item ${selectedChannel?.id === channel.id ? 'selected' : ''}`}
+                  onClick={() => setSelectedChannel(channel)}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    if (selectedServer?.ownerId === user.id) {
+                      setContextMenu({ x: e.clientX, y: e.clientY, channel });
+                    }
+                  }}
+                >
+                  {channel.avatar ? (
+                    <img src={channel.avatar} alt="" className="channel-avatar" />
+                  ) : (
+                    <span>#</span>
                   )}
+                  <span>{channel.name}</span>
                 </div>
-                {!collapsedCategories[category.id] && channels.filter(ch => ch.categoryId === category.id).map(channel => (
-                  <div
-                    key={channel.id}
-                    className={`channel-item ${selectedChannel?.id === channel.id ? 'selected' : ''}`}
-                    onClick={() => setSelectedChannel(channel)}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      if (selectedServer?.ownerId === user.id) {
-                        setContextMenu({ x: e.clientX, y: e.clientY, channel });
-                      }
-                    }}
-                  >
-                    {channel.avatar ? (
-                      <img src={channel.avatar} alt="" className="channel-avatar" />
-                    ) : (
-                      <span>{channel.type === 'voice' ? '🔊' : '#'}</span>
-                    )}
-                    <span>{channel.name}</span>
-                  </div>
-                ))}
-              </div>
-            )) : null}
+              ))}
+            </div>
 
-            {/* Uncategorized text channels */}
-            {(() => {
-              const uncategorizedText = channels.filter(ch => ch.type === 'text' && !ch.categoryId);
-              const uncategorizedVoice = channels.filter(ch => ch.type === 'voice' && !ch.categoryId);
-              return (
-                <>
-                  {uncategorizedText.length > 0 && (
-                    <div className="channels-list">
-                      <div className="channel-category">
-                        <span>Text Channels</span>
-                        {selectedServer?.ownerId === user.id && (
-                          <button className="add-channel-btn" onClick={() => setShowCreateChannel(true)}>+</button>
-                        )}
-                      </div>
-                      {uncategorizedText.map(channel => (
-                        <div
-                          key={channel.id}
-                          className={`channel-item ${selectedChannel?.id === channel.id ? 'selected' : ''}`}
-                          onClick={() => setSelectedChannel(channel)}
-                          onContextMenu={(e) => {
-                            e.preventDefault();
-                            if (selectedServer?.ownerId === user.id) {
-                              setContextMenu({ x: e.clientX, y: e.clientY, channel });
-                            }
-                          }}
-                        >
-                          {channel.avatar ? (
-                            <img src={channel.avatar} alt="" className="channel-avatar" />
-                          ) : (
-                            <span>#</span>
-                          )}
-                          <span>{channel.name}</span>
+            <div className="channels-list">
+              <div className="channel-category">
+                <span>Voice Channels</span>
+                {selectedServer?.ownerId === user.id && (
+                  <button className="add-channel-btn" onClick={() => { setNewChannelType('voice'); setShowCreateChannel(true); }}>+</button>
+                )}
+              </div>
+              {channels.filter(ch => ch.type === 'voice').map(channel => {
+                const usersInChannel = allVoiceChannels[channel.id] || [];
+                return (
+                  <div key={channel.id} className="voice-channel-group">
+                    <div
+                      className={`channel-item voice-channel ${connectedVoiceChannel === channel.id ? 'connected' : ''} ${usersInChannel.length > 0 ? 'has-users' : ''}`}
+                      onClick={() => handleJoinVoiceChannel(channel.id)}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        if (selectedServer?.ownerId === user.id) {
+                          setContextMenu({ x: e.clientX, y: e.clientY, channel });
+                        }
+                      }}
+                    >
+                      <span className={`voice-channel-icon ${usersInChannel.length > 0 ? 'active' : ''}`}>
+                        {usersInChannel.length > 0 ? '🟢' : '🔊'}
+                      </span>
+                      <span className="voice-channel-name">{channel.name}</span>
+                    </div>
+                    {usersInChannel.map(vu => (
+                      <div key={vu.userId} className="voice-channel-user">
+                        <div className={`voice-channel-user-avatar ${speakingUsers && speakingUsers[vu.userId] ? 'speaking' : ''}`}>
+                          {vu.username?.charAt(0).toUpperCase()}
                         </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {uncategorizedVoice.length > 0 && (
-                    <div className="channels-list">
-                      <div className="channel-category">
-                        <span>Voice Channels</span>
-                        {selectedServer?.ownerId === user.id && (
-                          <button className="add-channel-btn" onClick={() => { setNewChannelType('voice'); setShowCreateChannel(true); }}>+</button>
-                        )}
+                        <span className="voice-channel-user-name">{vu.username}</span>
                       </div>
-                      {uncategorizedVoice.map(channel => {
-                        const usersInChannel = allVoiceChannels[channel.id] || [];
-                        return (
-                          <div key={channel.id} className="voice-channel-group">
-                            <div
-                              className={`channel-item voice-channel ${connectedVoiceChannel === channel.id ? 'connected' : ''} ${usersInChannel.length > 0 ? 'has-users' : ''}`}
-                              onClick={() => handleJoinVoiceChannel(channel.id)}
-                              onContextMenu={(e) => {
-                                e.preventDefault();
-                                if (selectedServer?.ownerId === user.id) {
-                                  setContextMenu({ x: e.clientX, y: e.clientY, channel });
-                                }
-                              }}
-                            >
-                              <span className={`voice-channel-icon ${usersInChannel.length > 0 ? 'active' : ''}`}>
-                                {usersInChannel.length > 0 ? '🟢' : '🔊'}
-                              </span>
-                              <span className="voice-channel-name">{channel.name}</span>
-                            </div>
-                            {usersInChannel.map(vu => (
-                              <div key={vu.userId} className="voice-channel-user">
-                                <div className={`voice-channel-user-avatar ${speakingUsers && speakingUsers[vu.userId] ? 'speaking' : ''}`}>
-                                  {vu.username?.charAt(0).toUpperCase()}
-                                </div>
-                                <span className="voice-channel-user-name">{vu.username}</span>
-                              </div>
-                            ))}
-                            {connectedVoiceChannel === channel.id && (
-                              <div className="voice-channel-invite" onClick={(e) => { e.stopPropagation(); handleCreateInvite(); }}>
-                                Пригласить в голосовой чат
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </>
-              );
-            })()}
-
-            {selectedServer?.ownerId === user.id && (
-              <div className="channels-list">
-                <button className="add-category-btn" onClick={() => setShowCreateCategory(true)}>+ Add Category</button>
-              </div>
-            )}
+                    ))}
+                    {connectedVoiceChannel === channel.id && (
+                      <div className="voice-channel-invite" onClick={(e) => { e.stopPropagation(); handleCreateInvite(); }}>
+                        Пригласить в голосовой чат
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </>
         )}
 
@@ -1068,26 +972,6 @@ function Dashboard() {
             <div className="modal-buttons">
               <button onClick={() => setEditingChannel(null)}>Cancel</button>
               <button onClick={handleEditChannel}>Save</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Create Category Modal */}
-      {showCreateCategory && (
-        <div className="modal-overlay" onClick={() => setShowCreateCategory(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <h2>Create Category</h2>
-            <input
-              type="text"
-              placeholder="Category Name"
-              value={newCategoryName}
-              onChange={(e) => setNewCategoryName(e.target.value)}
-              required
-            />
-            <div className="modal-buttons">
-              <button onClick={() => setShowCreateCategory(false)}>Cancel</button>
-              <button onClick={handleCreateCategory}>Create</button>
             </div>
           </div>
         </div>

@@ -132,20 +132,8 @@ async function initDatabase() {
     )
   `);
 
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS categories (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      serverId TEXT NOT NULL,
-      "order" INTEGER DEFAULT 0,
-      createdAt TEXT DEFAULT NOW(),
-      FOREIGN KEY (serverId) REFERENCES servers(id) ON DELETE CASCADE
-    )
-  `);
-
   await pool.query(`ALTER TABLE channels ADD COLUMN IF NOT EXISTS description TEXT DEFAULT NULL`);
   await pool.query(`ALTER TABLE channels ADD COLUMN IF NOT EXISTS avatar TEXT DEFAULT NULL`);
-  await pool.query(`ALTER TABLE channels ADD COLUMN IF NOT EXISTS "categoryId" TEXT DEFAULT NULL`);
   await pool.query(`ALTER TABLE channels ADD COLUMN IF NOT EXISTS "order" INTEGER DEFAULT 0`);
 
   console.log('PostgreSQL database initialized');

@@ -1005,42 +1005,6 @@
   background: #1a1b1e;
 }
 
-/* Categories */
-.category-toggle {
-  font-size: 8px;
-  color: #8e9297;
-  margin-right: 4px;
-  cursor: pointer;
-}
-
-.category-name {
-  flex: 1;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  color: #8e9297;
-  cursor: pointer;
-}
-
-.category-name:hover {
-  color: #dcddde;
-}
-
-.add-category-btn {
-  width: 100%;
-  padding: 6px 16px;
-  background: none;
-  border: none;
-  color: #3ba55c;
-  cursor: pointer;
-  text-align: left;
-  font-size: 13px;
-}
-
-.add-category-btn:hover {
-  color: #2d8049;
-}
-
 /* Channel Avatar */
 .channel-avatar {
   width: 20px;
