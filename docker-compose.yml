@@ -5,11 +5,10 @@ services:
     build: .
     ports:
       - "9001:3001"
-    volumes:
-      - rucord-data:/app/server/data
     environment:
-      - DB_PATH=/app/server/data/rucord.db
+      - DB_HOST=62.173.148.71
+      - DB_PORT=5432
+      - DB_NAME=rucordbase
+      - DB_USER=postgres
+      - DB_PASSWORD=Alena71980324!
     restart: unless-stopped
-
-volumes:
-  rucord-data:

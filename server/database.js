@@ -1,21 +1,18 @@
-const initSqlJs = require('sql.js');
-const fs = require('fs');
-const path = require('path');
+const { Pool } = require('pg');
 
-const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'rucord.db');
-let db = null;
+const pool = new Pool({
+  host: process.env.DB_HOST || '62.173.148.71',
+  port: parseInt(process.env.DB_PORT || '5432'),
+  database: process.env.DB_NAME || 'rucordbase',
+  user: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || 'Alena71980324!',
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
+});
 
 async function initDatabase() {
-  const SQL = await initSqlJs();
-
-  if (fs.existsSync(DB_PATH)) {
-    const buffer = fs.readFileSync(DB_PATH);
-    db = new SQL.Database(buffer);
-  } else {
-    db = new SQL.Database();
-  }
- 
-  db.run(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       username TEXT UNIQUE NOT NULL,
@@ -24,69 +21,69 @@ async function initDatabase() {
       avatar TEXT DEFAULT NULL,
       status TEXT DEFAULT 'online',
       customStatus TEXT DEFAULT NULL,
-      createdAt TEXT DEFAULT (datetime('now'))
-    );
+      createdAt TEXT DEFAULT NOW()
+    )
   `);
 
-  db.run(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS servers (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       icon TEXT DEFAULT NULL,
       ownerId TEXT NOT NULL,
-      createdAt TEXT DEFAULT (datetime('now')),
+      createdAt TEXT DEFAULT NOW(),
       FOREIGN KEY (ownerId) REFERENCES users(id)
-    );
+    )
   `);
 
-  db.run(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS channels (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       type TEXT DEFAULT 'text',
       serverId TEXT NOT NULL,
-      createdAt TEXT DEFAULT (datetime('now')),
+      createdAt TEXT DEFAULT NOW(),
       FOREIGN KEY (serverId) REFERENCES servers(id) ON DELETE CASCADE
-    );
+    )
   `);
 
-  db.run(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS messages (
       id TEXT PRIMARY KEY,
       content TEXT NOT NULL,
       authorId TEXT NOT NULL,
       channelId TEXT NOT NULL,
-      createdAt TEXT DEFAULT (datetime('now')),
+      createdAt TEXT DEFAULT NOW(),
       FOREIGN KEY (authorId) REFERENCES users(id),
       FOREIGN KEY (channelId) REFERENCES channels(id) ON DELETE CASCADE
-    );
+    )
   `);
 
-  db.run(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS server_members (
       id TEXT PRIMARY KEY,
       userId TEXT NOT NULL,
       serverId TEXT NOT NULL,
       role TEXT DEFAULT 'member',
-      joinedAt TEXT DEFAULT (datetime('now')),
+      joinedAt TEXT DEFAULT NOW(),
       FOREIGN KEY (userId) REFERENCES users(id),
       FOREIGN KEY (serverId) REFERENCES servers(id) ON DELETE CASCADE
-    );
+    )
   `);
 
-  db.run(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS friends (
       id TEXT PRIMARY KEY,
       userId TEXT NOT NULL,
       friendId TEXT NOT NULL,
       status TEXT DEFAULT 'pending',
-      createdAt TEXT DEFAULT (datetime('now')),
+      createdAt TEXT DEFAULT NOW(),
       FOREIGN KEY (userId) REFERENCES users(id),
       FOREIGN KEY (friendId) REFERENCES users(id)
-    );
+    )
   `);
 
-  db.run(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS voice_channels (
       id TEXT PRIMARY KEY,
       channelId TEXT NOT NULL,
@@ -94,10 +91,10 @@ async function initDatabase() {
       socketId TEXT NOT NULL,
       FOREIGN KEY (channelId) REFERENCES channels(id) ON DELETE CASCADE,
       FOREIGN KEY (userId) REFERENCES users(id)
-    );
+    )
   `);
 
-  db.run(`
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS invites (
       id TEXT PRIMARY KEY,
       code TEXT UNIQUE NOT NULL,
@@ -105,51 +102,36 @@ async function initDatabase() {
       createdBy TEXT NOT NULL,
       uses INTEGER DEFAULT 0,
       maxUses INTEGER DEFAULT NULL,
-      createdAt TEXT DEFAULT (datetime('now')),
+      createdAt TEXT DEFAULT NOW(),
       FOREIGN KEY (serverId) REFERENCES servers(id) ON DELETE CASCADE,
       FOREIGN KEY (createdBy) REFERENCES users(id)
-    );
+    )
   `);
 
-  saveDatabase();
-  console.log('Database initialized');
-  return db;
+  console.log('PostgreSQL database initialized');
+  return pool;
 }
 
-function saveDatabase() {
-  if (db) {
-    const data = db.export();
-    const buffer = Buffer.from(data);
-    fs.writeFileSync(DB_PATH, buffer);
-  }
+function convertPlaceholders(sql) {
+  let index = 0;
+  return sql.replace(/\?/g, () => `$${++index}`);
 }
 
-function get(sql, params = []) {
-  const stmt = db.prepare(sql);
-  stmt.bind(params);
-  if (stmt.step()) {
-    const row = stmt.getAsObject();
-    stmt.free();
-    return row;
-  }
-  stmt.free();
-  return null;
+async function get(sql, params = []) {
+  const converted = convertPlaceholders(sql);
+  const result = await pool.query(converted, params);
+  return result.rows[0] || null;
 }
 
-function all(sql, params = []) {
-  const results = [];
-  const stmt = db.prepare(sql);
-  stmt.bind(params);
-  while (stmt.step()) {
-    results.push(stmt.getAsObject());
-  }
-  stmt.free();
-  return results;
+async function all(sql, params = []) {
+  const converted = convertPlaceholders(sql);
+  const result = await pool.query(converted, params);
+  return result.rows;
 }
 
-function run(sql, params = []) {
-  db.run(sql, params);
-  saveDatabase();
+async function run(sql, params = []) {
+  const converted = convertPlaceholders(sql);
+  return pool.query(converted, params);
 }
 
-module.exports = { initDatabase, get, all, run, saveDatabase };
+module.exports = { initDatabase, get, all, run, pool };
