@@ -205,7 +205,8 @@ app.post('/api/servers/:serverId/channels', authenticateToken, async (req, res) 
     if (!server) return res.status(404).json({ error: 'Server not found' });
     const member = await get('SELECT * FROM server_members WHERE userid = $1 AND serverid = $2', [req.user.id, req.params.serverId]);
     if (!member) return res.status(403).json({ error: 'Not a member' });
-    if (server.ownerId !== req.user.id && member.role !== 'admin') {
+    const serverOwnerId = server.ownerId || server.ownerid;
+    if (serverOwnerId !== req.user.id && member.role !== 'admin') {
       return res.status(403).json({ error: 'Only the server owner or admin can create channels' });
     }
     const existing = await get('SELECT * FROM channels WHERE name = $1 AND serverid = $2', [name.trim(), req.params.serverId]);
