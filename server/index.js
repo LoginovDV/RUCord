@@ -41,13 +41,13 @@ const authenticateToken = (req, res, next) => {
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { username, email, password } = req.body;
-    const existingUser = await get('SELECT * FROM users WHERE email = $1 OR username = $2', [email, username]);
+    const existingUser = await get('SELECT * FROM "users" WHERE "email" = $1 OR "username" = $2', [email, username]);
     if (existingUser) {
       return res.status(400).json({ error: 'User already exists' });
     }
     const hashedPassword = await bcrypt.hash(password, 10);
     const userId = uuidv4();
-    await run('INSERT INTO users (id, username, email, password) VALUES ($1, $2, $3, $4)', [userId, username, email, hashedPassword]);
+    await run('INSERT INTO "users" ("id", "username", "email", "password") VALUES ($1, $2, $3, $4)', [userId, username, email, hashedPassword]);
     const token = jwt.sign({ id: userId, username }, JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, user: { id: userId, username, email } });
   } catch (error) {
@@ -58,7 +58,7 @@ app.post('/api/auth/register', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await get('SELECT * FROM users WHERE email = $1 OR username = $2', [email, email]);
+    const user = await get('SELECT * FROM "users" WHERE "email" = $1 OR "username" = $2', [email, email]);
     if (!user) {
       return res.status(400).json({ error: 'User not found' });
     }
@@ -74,7 +74,7 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 app.get('/api/auth/me', authenticateToken, async (req, res) => {
-  const user = await get('SELECT id, username, email, avatar, status, customStatus FROM users WHERE id = $1', [req.user.id]);
+  const user = await get('SELECT "id", "username", "email", "avatar", "status", "customStatus" FROM "users" WHERE "id" = $1', [req.user.id]);
   res.json(user);
 });
 
@@ -84,10 +84,10 @@ app.post('/api/servers', authenticateToken, async (req, res) => {
     const { name } = req.body;
     const serverId = uuidv4();
     const channelId = uuidv4();
-    await run('INSERT INTO servers (id, name, ownerId) VALUES ($1, $2, $3)', [serverId, name, req.user.id]);
-    await run('INSERT INTO channels (id, name, type, serverId) VALUES ($1, $2, $3, $4)', [channelId, 'general', 'text', serverId]);
-    await run('INSERT INTO server_members (id, userId, serverId, role) VALUES ($1, $2, $3, $4)', [uuidv4(), req.user.id, serverId, 'owner']);
-    const srv = await get('SELECT * FROM servers WHERE id = $1', [serverId]);
+    await run('INSERT INTO "servers" ("id", "name", "ownerId") VALUES ($1, $2, $3)', [serverId, name, req.user.id]);
+    await run('INSERT INTO "channels" ("id", "name", "type", "serverId") VALUES ($1, $2, $3, $4)', [channelId, 'general', 'text', serverId]);
+    await run('INSERT INTO "server_members" ("id", "userId", "serverId", "role") VALUES ($1, $2, $3, $4)', [uuidv4(), req.user.id, serverId, 'owner']);
+    const srv = await get('SELECT * FROM "servers" WHERE "id" = $1', [serverId]);
     res.json(srv);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -96,9 +96,9 @@ app.post('/api/servers', authenticateToken, async (req, res) => {
 
 app.get('/api/servers', authenticateToken, async (req, res) => {
   const servers = await all(`
-    SELECT s.* FROM servers s
-    INNER JOIN server_members sm ON s.id = sm.serverId
-    WHERE sm.userId = $1
+    SELECT s.* FROM "servers" s
+    INNER JOIN "server_members" sm ON s."id" = sm."serverId"
+    WHERE sm."userId" = $1
   `, [req.user.id]);
   res.json(servers);
 });
@@ -106,11 +106,11 @@ app.get('/api/servers', authenticateToken, async (req, res) => {
 app.post('/api/servers/:serverId/join', authenticateToken, async (req, res) => {
   try {
     const { serverId } = req.params;
-    const srv = await get('SELECT * FROM servers WHERE id = $1', [serverId]);
+    const srv = await get('SELECT * FROM "servers" WHERE "id" = $1', [serverId]);
     if (!srv) return res.status(404).json({ error: 'Server not found' });
-    const existing = await get('SELECT * FROM server_members WHERE userId = $1 AND serverId = $2', [req.user.id, serverId]);
+    const existing = await get('SELECT * FROM "server_members" WHERE "userId" = $1 AND "serverId" = $2', [req.user.id, serverId]);
     if (existing) return res.status(400).json({ error: 'Already a member' });
-    await run('INSERT INTO server_members (id, userId, serverId) VALUES ($1, $2, $3)', [uuidv4(), req.user.id, serverId]);
+    await run('INSERT INTO "server_members" ("id", "userId", "serverId") VALUES ($1, $2, $3)', [uuidv4(), req.user.id, serverId]);
     res.json({ message: 'Joined server' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -121,14 +121,14 @@ app.post('/api/servers/:serverId/join', authenticateToken, async (req, res) => {
 app.post('/api/servers/:serverId/invites', authenticateToken, async (req, res) => {
   try {
     const { serverId } = req.params;
-    const member = await get('SELECT * FROM server_members WHERE userId = $1 AND serverId = $2', [req.user.id, serverId]);
+    const member = await get('SELECT * FROM "server_members" WHERE "userId" = $1 AND "serverId" = $2', [req.user.id, serverId]);
     if (!member) return res.status(403).json({ error: 'Not a member' });
 
     const code = Math.random().toString(36).substring(2, 10);
     const inviteId = uuidv4();
-    await run('INSERT INTO invites (id, code, serverId, createdBy) VALUES ($1, $2, $3, $4)', [inviteId, code, serverId, req.user.id]);
+    await run('INSERT INTO "invites" ("id", "code", "serverId", "createdBy") VALUES ($1, $2, $3, $4)', [inviteId, code, serverId, req.user.id]);
 
-    const invite = await get('SELECT * FROM invites WHERE id = $1', [inviteId]);
+    const invite = await get('SELECT * FROM "invites" WHERE "id" = $1', [inviteId]);
     res.json(invite);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -136,29 +136,29 @@ app.post('/api/servers/:serverId/invites', authenticateToken, async (req, res) =
 });
 
 app.get('/api/servers/:serverId/invites', authenticateToken, async (req, res) => {
-  const invites = await all('SELECT * FROM invites WHERE serverId = $1', [req.params.serverId]);
+  const invites = await all('SELECT * FROM "invites" WHERE "serverId" = $1', [req.params.serverId]);
   res.json(invites);
 });
 
 app.post('/api/invites/:code/join', authenticateToken, async (req, res) => {
   try {
-    const invite = await get('SELECT * FROM invites WHERE code = $1', [req.params.code]);
+    const invite = await get('SELECT * FROM "invites" WHERE "code" = $1', [req.params.code]);
     if (!invite) return res.status(404).json({ error: 'Invalid invite' });
 
     if (invite.maxUses && invite.uses >= invite.maxUses) {
       return res.status(400).json({ error: 'Invite expired' });
     }
 
-    const existing = await get('SELECT * FROM server_members WHERE userId = $1 AND serverId = $2', [req.user.id, invite.serverId]);
+    const existing = await get('SELECT * FROM "server_members" WHERE "userId" = $1 AND "serverId" = $2', [req.user.id, invite.serverId]);
     if (existing) {
-      const server = await get('SELECT * FROM servers WHERE id = $1', [invite.serverId]);
-      return res.json(server);
+      const srv = await get('SELECT * FROM "servers" WHERE "id" = $1', [invite.serverId]);
+      return res.json(srv);
     }
 
-    await run('INSERT INTO server_members (id, userId, serverId) VALUES ($1, $2, $3)', [uuidv4(), req.user.id, invite.serverId]);
-    await run('UPDATE invites SET uses = uses + 1 WHERE id = $1', [invite.id]);
+    await run('INSERT INTO "server_members" ("id", "userId", "serverId") VALUES ($1, $2, $3)', [uuidv4(), req.user.id, invite.serverId]);
+    await run('UPDATE "invites" SET "uses" = "uses" + 1 WHERE "id" = $1', [invite.id]);
 
-    const srv = await get('SELECT * FROM servers WHERE id = $1', [invite.serverId]);
+    const srv = await get('SELECT * FROM "servers" WHERE "id" = $1', [invite.serverId]);
     res.json(srv);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -167,7 +167,7 @@ app.post('/api/invites/:code/join', authenticateToken, async (req, res) => {
 
 // Channel routes
 app.get('/api/servers/:serverId/channels', authenticateToken, async (req, res) => {
-  const channels = await all('SELECT * FROM channels WHERE serverId = $1', [req.params.serverId]);
+  const channels = await all('SELECT * FROM "channels" WHERE "serverId" = $1', [req.params.serverId]);
   res.json(channels);
 });
 
@@ -175,8 +175,8 @@ app.post('/api/servers/:serverId/channels', authenticateToken, async (req, res) 
   try {
     const { name, type = 'text' } = req.body;
     const channelId = uuidv4();
-    await run('INSERT INTO channels (id, name, type, serverId) VALUES ($1, $2, $3, $4)', [channelId, name, type, req.params.serverId]);
-    const channel = await get('SELECT * FROM channels WHERE id = $1', [channelId]);
+    await run('INSERT INTO "channels" ("id", "name", "type", "serverId") VALUES ($1, $2, $3, $4)', [channelId, name, type, req.params.serverId]);
+    const channel = await get('SELECT * FROM "channels" WHERE "id" = $1', [channelId]);
     res.json(channel);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -186,11 +186,11 @@ app.post('/api/servers/:serverId/channels', authenticateToken, async (req, res) 
 // Message routes
 app.get('/api/channels/:channelId/messages', authenticateToken, async (req, res) => {
   const messages = await all(`
-    SELECT m.*, u.username, u.avatar
-    FROM messages m
-    INNER JOIN users u ON m.authorId = u.id
-    WHERE m.channelId = $1
-    ORDER BY m.createdAt DESC
+    SELECT m.*, u."username", u."avatar"
+    FROM "messages" m
+    INNER JOIN "users" u ON m."authorId" = u."id"
+    WHERE m."channelId" = $1
+    ORDER BY m."createdAt" DESC
     LIMIT 50
   `, [req.params.channelId]);
   res.json(messages.reverse());
@@ -199,11 +199,11 @@ app.get('/api/channels/:channelId/messages', authenticateToken, async (req, res)
 // Friend routes
 app.get('/api/friends', authenticateToken, async (req, res) => {
   const friends = await all(`
-    SELECT u.id, u.username, u.avatar, u.status
-    FROM friends f
-    INNER JOIN users u ON (f.friendId = u.id OR f.userId = u.id)
-    WHERE (f.userId = $1 OR f.friendId = $2) AND f.status = 'accepted'
-    AND u.id != $3
+    SELECT u."id", u."username", u."avatar", u."status"
+    FROM "friends" f
+    INNER JOIN "users" u ON (f."friendId" = u."id" OR f."userId" = u."id")
+    WHERE (f."userId" = $1 OR f."friendId" = $2) AND f."status" = 'accepted'
+    AND u."id" != $3
   `, [req.user.id, req.user.id, req.user.id]);
   res.json(friends);
 });
@@ -211,15 +211,15 @@ app.get('/api/friends', authenticateToken, async (req, res) => {
 app.post('/api/friends/add', authenticateToken, async (req, res) => {
   try {
     const { username } = req.body;
-    const friend = await get('SELECT * FROM users WHERE username = $1', [username]);
+    const friend = await get('SELECT * FROM "users" WHERE "username" = $1', [username]);
     if (!friend) return res.status(404).json({ error: 'User not found' });
     if (friend.id === req.user.id) return res.status(400).json({ error: 'Cannot add yourself' });
     const existing = await get(
-      'SELECT * FROM friends WHERE (userId = $1 AND friendId = $2) OR (userId = $3 AND friendId = $4)',
+      'SELECT * FROM "friends" WHERE ("userId" = $1 AND "friendId" = $2) OR ("userId" = $3 AND "friendId" = $4)',
       [req.user.id, friend.id, friend.id, req.user.id]
     );
     if (existing) return res.status(400).json({ error: 'Friend request already exists' });
-    await run('INSERT INTO friends (id, userId, friendId, status) VALUES ($1, $2, $3, $4)', [uuidv4(), req.user.id, friend.id, 'accepted']);
+    await run('INSERT INTO "friends" ("id", "userId", "friendId", "status") VALUES ($1, $2, $3, $4)', [uuidv4(), req.user.id, friend.id, 'accepted']);
     res.json({ message: 'Friend added' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -234,7 +234,7 @@ io.on('connection', (socket) => {
 
   socket.on('user_online', async (userId) => {
     users.set(userId, socket.id);
-    await run('UPDATE users SET status = $1 WHERE id = $2', ['online', userId]);
+    await run('UPDATE "users" SET "status" = $1 WHERE "id" = $2', ['online', userId]);
     io.emit('user_status_change', { userId, status: 'online' });
   });
 
@@ -249,12 +249,12 @@ io.on('connection', (socket) => {
   socket.on('send_message', async (data) => {
     const { channelId, content, authorId } = data;
     const messageId = uuidv4();
-    await run('INSERT INTO messages (id, content, authorId, channelId) VALUES ($1, $2, $3, $4)', [messageId, content, authorId, channelId]);
+    await run('INSERT INTO "messages" ("id", "content", "authorId", "channelId") VALUES ($1, $2, $3, $4)', [messageId, content, authorId, channelId]);
     const message = await get(`
-      SELECT m.*, u.username, u.avatar
-      FROM messages m
-      INNER JOIN users u ON m.authorId = u.id
-      WHERE m.id = $1
+      SELECT m.*, u."username", u."avatar"
+      FROM "messages" m
+      INNER JOIN "users" u ON m."authorId" = u."id"
+      WHERE m."id" = $1
     `, [messageId]);
     io.to(channelId).emit('new_message', message);
   });
@@ -270,16 +270,16 @@ io.on('connection', (socket) => {
   socket.on('join_voice_channel', async (data) => {
     const { channelId, userId } = data;
     socket.join(`voice_${channelId}`);
-    await run('INSERT INTO voice_channels (id, channelId, userId, socketId) VALUES ($1, $2, $3, $4)', [uuidv4(), channelId, userId, socket.id]);
-    const voiceUsers = await all('SELECT vc.*, u.username FROM voice_channels vc INNER JOIN users u ON vc.userId = u.id WHERE vc.channelId = $1', [channelId]);
+    await run('INSERT INTO "voice_channels" ("id", "channelId", "userId", "socketId") VALUES ($1, $2, $3, $4)', [uuidv4(), channelId, userId, socket.id]);
+    const voiceUsers = await all('SELECT vc.*, u."username" FROM "voice_channels" vc INNER JOIN "users" u ON vc."userId" = u."id" WHERE vc."channelId" = $1', [channelId]);
     io.to(`voice_${channelId}`).emit('voice_users_update', voiceUsers);
   });
 
   socket.on('leave_voice_channel', async (data) => {
     const { channelId, userId } = data;
     socket.leave(`voice_${channelId}`);
-    await run('DELETE FROM voice_channels WHERE channelId = $1 AND userId = $2', [channelId, userId]);
-    const voiceUsers = await all('SELECT vc.*, u.username FROM voice_channels vc INNER JOIN users u ON vc.userId = u.id WHERE vc.channelId = $1', [channelId]);
+    await run('DELETE FROM "voice_channels" WHERE "channelId" = $1 AND "userId" = $2', [channelId, userId]);
+    const voiceUsers = await all('SELECT vc.*, u."username" FROM "voice_channels" vc INNER JOIN "users" u ON vc."userId" = u."id" WHERE vc."channelId" = $1', [channelId]);
     io.to(`voice_${channelId}`).emit('voice_users_update', voiceUsers);
   });
 
@@ -350,7 +350,7 @@ io.on('connection', (socket) => {
     for (const [userId, socketId] of users.entries()) {
       if (socketId === socket.id) {
         users.delete(userId);
-        await run('UPDATE users SET status = $1 WHERE id = $2', ['offline', userId]);
+        await run('UPDATE "users" SET "status" = $1 WHERE "id" = $2', ['offline', userId]);
         io.emit('user_status_change', { userId, status: 'offline' });
         break;
       }
