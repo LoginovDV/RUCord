@@ -4,7 +4,7 @@ services:
   rucord:
     build: .
     ports:
-      - "80:3001"
+      - "9001:3001"
     volumes:
       - rucord-data:/app/server/data
     restart: unless-stopped
