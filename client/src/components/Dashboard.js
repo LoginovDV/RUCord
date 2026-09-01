@@ -26,7 +26,7 @@ function Dashboard() {
   const [showCreateChannel, setShowCreateChannel] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [friends, setFriends] = useState([]);
-  const [activeTab, setActiveTab] = useState('servers');
+  const [activeTab, setActiveTab] = useState('friends');
   const [newFriendUsername, setNewFriendUsername] = useState('');
   const [connectedVoiceChannel, setConnectedVoiceChannel] = useState(null);
   const [voiceUsers, setVoiceUsers] = useState([]);
