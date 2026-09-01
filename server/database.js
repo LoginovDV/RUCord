@@ -14,7 +14,7 @@ async function initDatabase() {
   } else {
     db = new SQL.Database();
   }
-
+ 
   db.run(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
