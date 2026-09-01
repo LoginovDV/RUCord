@@ -33,13 +33,18 @@
 .server-voice-indicator {
   position: absolute;
   left: -4px;
-  top: 50%;
+  top: 85%;
   transform: translateY(-50%);
-  width: 8px;
-  height: 8px;
+  width: 18px;
+  height: 18px;
   background-color: #3ba55c;
   border-radius: 50%;
-  border: 2px solid #202225;
+  border: 3px solid #202225;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: #fff;
 }
 
 .server-icon:hover {

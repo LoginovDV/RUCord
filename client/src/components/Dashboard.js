@@ -381,7 +381,7 @@ function Dashboard() {
               }}
             >
               {server.name.charAt(0).toUpperCase()}
-              {hasVoiceUsers && <div className="server-voice-indicator"></div>}
+              {hasVoiceUsers && <div className="server-voice-indicator">🎧</div>}
             </div>
           );
         })}
