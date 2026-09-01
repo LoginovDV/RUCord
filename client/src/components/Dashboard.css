@@ -364,12 +364,21 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  height: 52px;
+  border-top: 1px solid #202225;
 }
 
 .user-info {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.user-avatar-wrapper {
+  position: relative;
+  flex-shrink: 0;
 }
 
 .user-avatar {
@@ -382,34 +391,86 @@
   align-items: center;
   font-weight: 600;
   font-size: 14px;
+  color: #fff;
+}
+
+.user-status-dot {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #3ba55c;
+  border: 2px solid #292b2f;
 }
 
 .user-details {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .username {
   font-weight: 600;
   font-size: 14px;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .user-status {
   font-size: 12px;
-  color: #3ba55c;
+  color: #b9bbbe;
 }
 
-.logout-btn {
-  background: none;
+.user-panel-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.user-panel-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
   border: none;
+  background-color: transparent;
   color: #b9bbbe;
   cursor: pointer;
-  font-size: 20px;
-  padding: 4px 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background-color 0.15s, color 0.15s;
 }
 
-.logout-btn:hover {
-  color: #ed4245;
+.user-panel-btn:hover {
+  background-color: #36393f;
+  color: #dcddde;
+}
+
+.user-panel-btn.active {
+  background-color: #36393f;
+  color: #dcddde;
+}
+
+.user-panel-btn.active.red {
+  background-color: #ed4245;
+  color: #fff;
+}
+
+.user-panel-btn.active.red:hover {
+  background-color: #c03537;
+}
+
+.user-panel-btn.disconnect {
+  color: #b9bbbe;
+}
+
+.user-panel-btn.disconnect:hover {
+  background-color: #ed4245;
+  color: #fff;
 }
 
 /* Chat Area */

@@ -9,11 +9,9 @@ const ICE_SERVERS = {
   ]
 };
 
-function VoiceChannel({ channelId, voiceUsers, onLeave, remoteScreen, onRemoteScreenChange, onLocalScreenChange }) {
+function VoiceChannel({ channelId, voiceUsers, onLeave, remoteScreen, onRemoteScreenChange, onLocalScreenChange, isMuted, setIsMuted, isDeafened, setIsDeafened, onToggleMute, onToggleDeafen }) {
   const { user } = useAuth();
   const socket = useSocket();
-  const [isMuted, setIsMuted] = useState(false);
-  const [isDeafened, setIsDeafened] = useState(false);
   const [audioReady, setAudioReady] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const localStreamRef = useRef(null);
@@ -289,6 +287,11 @@ function VoiceChannel({ channelId, voiceUsers, onLeave, remoteScreen, onRemoteSc
     setIsDeafened(newDeafened);
   };
 
+  useEffect(() => {
+    if (onToggleMute) onToggleMute.current = toggleMute;
+    if (onToggleDeafen) onToggleDeafen.current = toggleDeafen;
+  });
+
   const startScreenShare = async () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
       alert('Screen sharing not supported in this browser');
@@ -365,28 +368,11 @@ function VoiceChannel({ channelId, voiceUsers, onLeave, remoteScreen, onRemoteSc
       </div>
       <div className="voice-controls">
         <button
-          className={`voice-control-btn ${isMuted ? 'muted' : ''}`}
-          onClick={toggleMute}
-          title={isMuted ? 'Unmute' : 'Mute'}
-        >
-          {isMuted ? '🔇' : '🎤'}
-        </button>
-        <button
-          className={`voice-control-btn ${isDeafened ? 'deafened' : ''}`}
-          onClick={toggleDeafen}
-          title={isDeafened ? 'Undeafen' : 'Deafen'}
-        >
-          {isDeafened ? '🔕' : '🎧'}
-        </button>
-        <button
           className={`voice-control-btn ${isScreenSharing ? 'sharing' : ''}`}
           onClick={isScreenSharing ? stopScreenShare : startScreenShare}
           title={isScreenSharing ? 'Stop Screen Share' : 'Share Screen'}
         >
           🖥️
-        </button>
-        <button className="voice-control-btn disconnect" onClick={handleLeave} title="Disconnect">
-          📞
         </button>
       </div>
     </div>

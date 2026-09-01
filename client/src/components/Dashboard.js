@@ -39,6 +39,10 @@ function Dashboard() {
   const [newInviteLink, setNewInviteLink] = useState('');
   const [remoteScreen, setRemoteScreen] = useState(null);
   const [localScreenStream, setLocalScreenStream] = useState(null);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isDeafened, setIsDeafened] = useState(false);
+  const toggleMuteRef = useRef(null);
+  const toggleDeafenRef = useRef(null);
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
@@ -290,6 +294,8 @@ function Dashboard() {
       setVoiceUsers([]);
       setRemoteScreen(null);
       setLocalScreenStream(null);
+      setIsMuted(false);
+      setIsDeafened(false);
     }
   };
 
@@ -416,19 +422,74 @@ function Dashboard() {
             remoteScreen={remoteScreen}
             onRemoteScreenChange={setRemoteScreen}
             onLocalScreenChange={setLocalScreenStream}
+            isMuted={isMuted}
+            setIsMuted={setIsMuted}
+            isDeafened={isDeafened}
+            setIsDeafened={setIsDeafened}
+            onToggleMute={toggleMuteRef}
+            onToggleDeafen={toggleDeafenRef}
           />
         )}
 
         {/* User panel */}
         <div className="user-panel">
           <div className="user-info">
-            <div className="user-avatar">{user.username.charAt(0).toUpperCase()}</div>
+            <div className="user-avatar-wrapper">
+              <div className="user-avatar">{user.username.charAt(0).toUpperCase()}</div>
+              <div className="user-status-dot"></div>
+            </div>
             <div className="user-details">
               <span className="username">{user.username}</span>
               <span className="user-status">Online</span>
             </div>
           </div>
-          <button className="logout-btn" onClick={logout}>×</button>
+          {connectedVoiceChannel ? (
+            <div className="user-panel-controls">
+              <button
+                className={`user-panel-btn ${isMuted ? 'active red' : ''}`}
+                onClick={() => toggleMuteRef.current?.()}
+                title={isMuted ? 'Unmute' : 'Mute'}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  {isMuted ? (
+                    <path d="M12 2C10.34 2 9 3.34 9 5V11C9 12.66 10.34 14 12 14C13.66 14 15 12.66 15 11V5C15 3.34 13.66 2 12 2ZM19 11C19 14.53 16.39 17.44 13 17.93V21H11V17.93C7.61 17.44 5 14.53 5 11H7C7 13.76 9.24 16 12 16C14.76 16 17 13.76 17 11H19Z" />
+                  ) : (
+                    <path d="M12 2C10.34 2 9 3.34 9 5V11C9 12.66 10.34 14 12 14C13.66 14 15 12.66 15 11V5C15 3.34 13.66 2 12 2ZM19 11C19 14.53 16.39 17.44 13 17.93V21H11V17.93C7.61 17.44 5 14.53 5 11H7C7 13.76 9.24 16 12 16C14.76 16 17 13.76 17 11H19Z" />
+                  )}
+                </svg>
+              </button>
+              <button
+                className={`user-panel-btn ${isDeafened ? 'active red' : ''}`}
+                onClick={() => toggleDeafenRef.current?.()}
+                title={isDeafened ? 'Undeafen' : 'Deafen'}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  {isDeafened ? (
+                    <path d="M12 2C6.48 2 2 6.48 2 12V20C2 21.1 2.9 22 4 22H8V12H4.5C4.5 7.31 7.81 4 12 4C16.19 4 19.5 7.31 19.5 12H16V22H20C21.1 22 22 21.1 22 20V12C22 6.48 17.52 2 12 2ZM7 14V18H5V14H7ZM19 18H17V14H19V18Z" />
+                  ) : (
+                    <path d="M12 2C6.48 2 2 6.48 2 12V20C2 21.1 2.9 22 4 22H8V12H4.5C4.5 7.31 7.81 4 12 4C16.19 4 19.5 7.31 19.5 12H16V22H20C21.1 22 22 21.1 22 20V12C22 6.48 17.52 2 12 2ZM7 14V18H5V14H7ZM19 18H17V14H19V18Z" />
+                  )}
+                </svg>
+              </button>
+              <button
+                className="user-panel-btn disconnect"
+                onClick={handleLeaveVoiceChannel}
+                title="Disconnect"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 9C10.4 9 8.85 9.25 7.4 9.7V12.82C7.4 13.22 7.17 13.56 6.84 13.72C5.86 14.21 4.97 14.84 4.18 15.57C4 15.75 3.75 15.85 3.48 15.85C3.2 15.85 2.95 15.74 2.77 15.56L0.29 13.08C0.11 12.9 0 12.65 0 12.38C0 12.1 0.11 11.85 0.29 11.67C3.34 8.78 7.46 7 12 7C16.54 7 20.66 8.78 23.71 11.67C23.89 11.85 24 12.1 24 12.38C24 12.65 23.89 12.9 23.71 13.08L21.23 15.56C21.05 15.74 20.8 15.85 20.52 15.85C20.25 15.85 20 15.75 19.82 15.57C19.03 14.84 18.14 14.21 17.16 13.72C16.83 13.56 16.6 13.22 16.6 12.82V9.7C15.15 9.25 13.6 9 12 9Z" />
+                </svg>
+              </button>
+            </div>
+          ) : (
+            <div className="user-panel-controls">
+              <button className="user-panel-btn" onClick={logout} title="Log Out">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17 7L15.59 8.41L18.17 11H8V13H18.17L15.59 15.59L17 17L22 12L17 7ZM4 5H12V3H4C2.9 3 2 3.9 2 5V19C2 20.1 2.9 21 4 21H12V19H4V5Z" />
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
