@@ -275,17 +275,18 @@ function VoiceChannel({ channelId, voiceUsers, onLeave, remoteScreen, onRemoteSc
   };
 
   const toggleDeafen = () => {
+    const newDeafened = !isDeafened;
     if (localStreamRef.current) {
       const audioTrack = localStreamRef.current.getAudioTracks()[0];
       if (audioTrack) {
-        audioTrack.enabled = isDeafened;
-        setIsMuted(!isDeafened);
+        audioTrack.enabled = !newDeafened;
       }
     }
     Object.values(audioElementsRef.current).forEach(audio => {
-      audio.muted = !isDeafened;
+      audio.muted = newDeafened;
     });
-    setIsDeafened(!isDeafened);
+    setIsMuted(newDeafened);
+    setIsDeafened(newDeafened);
   };
 
   const startScreenShare = async () => {
@@ -295,7 +296,7 @@ function VoiceChannel({ channelId, voiceUsers, onLeave, remoteScreen, onRemoteSc
     }
 
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
       screenStreamRef.current = stream;
       setIsScreenSharing(true);
       if (onLocalScreenChange) onLocalScreenChange(stream);
