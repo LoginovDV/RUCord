@@ -108,6 +108,11 @@ app.get('/api/servers', authenticateToken, async (req, res) => {
   res.json(servers);
 });
 
+app.get('/api/voice-channels', authenticateToken, async (req, res) => {
+  const allVoiceState = await all('SELECT channelid, userid FROM voice_channels');
+  res.json(allVoiceState);
+});
+
 app.post('/api/servers/:serverId/join', authenticateToken, async (req, res) => {
   try {
     const { serverId } = req.params;
@@ -385,6 +390,16 @@ io.on('connection', (socket) => {
         users.delete(userId);
         await run('UPDATE users SET status = $1 WHERE id = $2', ['offline', userId]);
         io.emit('user_status_change', { userId, status: 'offline' });
+        const leftChannels = await all('SELECT channelid FROM voice_channels WHERE userid = $1', [userId]);
+        await run('DELETE FROM voice_channels WHERE userid = $1', [userId]);
+        for (const ch of leftChannels) {
+          const voiceUsers = await all('SELECT vc.*, u.username FROM voice_channels vc INNER JOIN users u ON vc.userid = u.id WHERE vc.channelid = $1', [ch.channelid]);
+          io.to(`voice_${ch.channelid}`).emit('voice_users_update', voiceUsers);
+        }
+        if (leftChannels.length > 0) {
+          const allVoiceState = await all('SELECT channelid, userid FROM voice_channels');
+          io.emit('all_voice_channels_update', allVoiceState);
+        }
         break;
       }
     }

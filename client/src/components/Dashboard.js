@@ -51,6 +51,7 @@ function Dashboard() {
   useEffect(() => {
     loadServers();
     loadFriends();
+    loadAllVoiceChannels();
   }, []);
 
   useEffect(() => {
@@ -175,6 +176,20 @@ function Dashboard() {
       setFriends(res.data);
     } catch (error) {
       console.error('Error loading friends:', error);
+    }
+  };
+
+  const loadAllVoiceChannels = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/api/voice-channels`);
+      const grouped = {};
+      res.data.forEach(({ channelid, userid }) => {
+        if (!grouped[channelid]) grouped[channelid] = [];
+        grouped[channelid].push(userid);
+      });
+      setAllVoiceChannels(grouped);
+    } catch (error) {
+      console.error('Error loading voice channels:', error);
     }
   };
 
