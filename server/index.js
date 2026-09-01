@@ -109,7 +109,11 @@ app.get('/api/servers', authenticateToken, async (req, res) => {
 });
 
 app.get('/api/voice-channels', authenticateToken, async (req, res) => {
-  const allVoiceState = await all('SELECT channelid, userid FROM voice_channels');
+  const allVoiceState = await all(`
+    SELECT vc.channelid, vc.userid, u.username 
+    FROM voice_channels vc 
+    INNER JOIN users u ON vc.userid = u.id
+  `);
   res.json(allVoiceState);
 });
 
@@ -302,7 +306,11 @@ io.on('connection', (socket) => {
     await run('INSERT INTO voice_channels (id, channelid, userid, socketid) VALUES ($1, $2, $3, $4)', [uuidv4(), channelId, userId, socket.id]);
     const voiceUsers = await all('SELECT vc.*, u.username FROM voice_channels vc INNER JOIN users u ON vc.userid = u.id WHERE vc.channelid = $1', [channelId]);
     io.to(`voice_${channelId}`).emit('voice_users_update', voiceUsers);
-    const allVoiceState = await all('SELECT channelid, userid FROM voice_channels');
+    const allVoiceState = await all(`
+      SELECT vc.channelid, vc.userid, u.username 
+      FROM voice_channels vc 
+      INNER JOIN users u ON vc.userid = u.id
+    `);
     io.emit('all_voice_channels_update', allVoiceState);
   });
 
@@ -312,7 +320,11 @@ io.on('connection', (socket) => {
     await run('DELETE FROM voice_channels WHERE channelid = $1 AND userid = $2', [channelId, userId]);
     const voiceUsers = await all('SELECT vc.*, u.username FROM voice_channels vc INNER JOIN users u ON vc.userid = u.id WHERE vc.channelid = $1', [channelId]);
     io.to(`voice_${channelId}`).emit('voice_users_update', voiceUsers);
-    const allVoiceState = await all('SELECT channelid, userid FROM voice_channels');
+    const allVoiceState = await all(`
+      SELECT vc.channelid, vc.userid, u.username 
+      FROM voice_channels vc 
+      INNER JOIN users u ON vc.userid = u.id
+    `);
     io.emit('all_voice_channels_update', allVoiceState);
   });
 
@@ -397,7 +409,11 @@ io.on('connection', (socket) => {
           io.to(`voice_${ch.channelid}`).emit('voice_users_update', voiceUsers);
         }
         if (leftChannels.length > 0) {
-          const allVoiceState = await all('SELECT channelid, userid FROM voice_channels');
+          const allVoiceState = await all(`
+            SELECT vc.channelid, vc.userid, u.username 
+            FROM voice_channels vc 
+            INNER JOIN users u ON vc.userid = u.id
+          `);
           io.emit('all_voice_channels_update', allVoiceState);
         }
         break;
