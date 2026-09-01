@@ -7,6 +7,8 @@ services:
       - "9001:3001"
     volumes:
       - rucord-data:/app/server/data
+    environment:
+      - DB_PATH=/app/server/data/rucord.db
     restart: unless-stopped
 
 volumes:
