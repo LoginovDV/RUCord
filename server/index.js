@@ -312,6 +312,41 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Screen share signaling
+  socket.on('screen_share_start', (data) => {
+    const { channelId, from } = data;
+    socket.to(`voice_${channelId}`).emit('screen_share_start', { from, socketId: socket.id });
+  });
+
+  socket.on('screen_share_stop', (data) => {
+    const { channelId, from } = data;
+    socket.to(`voice_${channelId}`).emit('screen_share_stop', { from });
+  });
+
+  socket.on('screen_offer', (data) => {
+    const { to, offer, from } = data;
+    const targetSocketId = users.get(to);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('screen_offer', { from, offer, socketId: socket.id });
+    }
+  });
+
+  socket.on('screen_answer', (data) => {
+    const { to, answer, from } = data;
+    const targetSocketId = users.get(to);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('screen_answer', { from, answer, socketId: socket.id });
+    }
+  });
+
+  socket.on('screen_ice_candidate', (data) => {
+    const { to, candidate, from } = data;
+    const targetSocketId = users.get(to);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('screen_ice_candidate', { from, candidate, socketId: socket.id });
+    }
+  });
+
   socket.on('disconnect', () => {
     for (const [userId, socketId] of users.entries()) {
       if (socketId === socket.id) {

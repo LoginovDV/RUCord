@@ -4,7 +4,10 @@ import axios from 'axios';
 import { useAuth } from '../App';
 import './Auth.css';
 
-const API_URL = window.location.origin;
+const isDev = window.location.port === '3000';
+const API_URL = isDev
+  ? `http://${window.location.hostname}:3001`
+  : window.location.origin;
 
 function InvitePage() {
   const { code } = useParams();

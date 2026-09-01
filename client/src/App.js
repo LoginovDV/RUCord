@@ -14,7 +14,10 @@ const SocketContext = createContext(null);
 export const useAuth = () => useContext(AuthContext);
 export const useSocket = () => useContext(SocketContext);
 
-const API_URL = window.location.origin;
+const isDev = window.location.port === '3000';
+const API_URL = isDev
+  ? `http://${window.location.hostname}:3001`
+  : window.location.origin;
 const socket = io(API_URL);
 
 function App() {

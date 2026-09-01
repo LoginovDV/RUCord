@@ -4,7 +4,10 @@ import { useAuth, useSocket } from '../App';
 import VoiceChannel from './VoiceChannel';
 import './Dashboard.css';
 
-const API_URL = window.location.origin;
+const isDev = window.location.port === '3000';
+const API_URL = isDev
+  ? `http://${window.location.hostname}:3001`
+  : window.location.origin;
 
 function Dashboard() {
   const { user, logout } = useAuth();
@@ -31,6 +34,8 @@ function Dashboard() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteCode, setInviteCode] = useState('');
   const [newInviteLink, setNewInviteLink] = useState('');
+  const [remoteScreen, setRemoteScreen] = useState(null);
+  const [localScreenStream, setLocalScreenStream] = useState(null);
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
@@ -247,6 +252,8 @@ function Dashboard() {
       socket.emit('leave_voice_channel', { channelId: connectedVoiceChannel, userId: user.id });
       setConnectedVoiceChannel(null);
       setVoiceUsers([]);
+      setRemoteScreen(null);
+      setLocalScreenStream(null);
     }
   };
 
@@ -351,6 +358,9 @@ function Dashboard() {
             channelId={connectedVoiceChannel}
             voiceUsers={voiceUsers}
             onLeave={handleLeaveVoiceChannel}
+            remoteScreen={remoteScreen}
+            onRemoteScreenChange={setRemoteScreen}
+            onLocalScreenChange={setLocalScreenStream}
           />
         )}
 
@@ -388,25 +398,57 @@ function Dashboard() {
           <>
             <div className="chat-header">
               <span className="channel-name"># {selectedChannel.name}</span>
+              {remoteScreen && (
+                <span className="screen-share-indicator">🖥️ Screen Share Active</span>
+              )}
             </div>
 
-            <div className="messages-container">
-              {messages.map(message => (
-                <div key={message.id} className="message">
-                  <div className="message-avatar">{message.username?.charAt(0).toUpperCase()}</div>
-                  <div className="message-content">
-                    <div className="message-header">
-                      <span className="message-author">{message.username}</span>
-                      <span className="message-time">
-                        {new Date(message.createdAt).toLocaleTimeString()}
-                      </span>
-                    </div>
-                    <div className="message-text">{message.content}</div>
-                  </div>
+            {remoteScreen && remoteScreen.stream ? (
+              <div className="screen-share-center">
+                <div className="screen-share-center-header">
+                  <span>🖥️ Screen Share</span>
+                  <button onClick={() => setRemoteScreen(null)}>✕ Close</button>
                 </div>
-              ))}
-              <div ref={messagesEndRef} />
-            </div>
+                <video
+                  autoPlay
+                  playsInline
+                  ref={el => { if (el) el.srcObject = remoteScreen.stream; }}
+                  className="screen-share-center-video"
+                />
+              </div>
+            ) : localScreenStream ? (
+              <div className="screen-share-center">
+                <div className="screen-share-center-header">
+                  <span>🖥️ Your Screen</span>
+                  <button onClick={() => {}}>✕ Close</button>
+                </div>
+                <video
+                  autoPlay
+                  playsInline
+                  muted
+                  ref={el => { if (el) el.srcObject = localScreenStream; }}
+                  className="screen-share-center-video"
+                />
+              </div>
+            ) : (
+              <div className="messages-container">
+                {messages.map(message => (
+                  <div key={message.id} className="message">
+                    <div className="message-avatar">{message.username?.charAt(0).toUpperCase()}</div>
+                    <div className="message-content">
+                      <div className="message-header">
+                        <span className="message-author">{message.username}</span>
+                        <span className="message-time">
+                          {new Date(message.createdAt).toLocaleTimeString()}
+                        </span>
+                      </div>
+                      <div className="message-text">{message.content}</div>
+                    </div>
+                  </div>
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
 
             {typingUsers.length > 0 && (
               <div className="typing-indicator">

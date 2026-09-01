@@ -95,3 +95,47 @@
 .voice-control-btn.disconnect:hover {
   background-color: #c03537;
 }
+
+.voice-control-btn.sharing {
+  background-color: #3ba55c;
+  color: #fff;
+}
+
+.screen-share-container,
+.screen-share-local {
+  margin: 8px;
+  background-color: #1a1b1e;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.screen-share-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: #202225;
+  color: #dcddde;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.screen-share-header button {
+  background: none;
+  border: none;
+  color: #b9bbbe;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.screen-share-header button:hover {
+  color: #ed4245;
+}
+
+.screen-share-video {
+  width: 100%;
+  display: block;
+  max-height: 300px;
+  object-fit: contain;
+  background-color: #000;
+}
