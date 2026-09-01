@@ -234,6 +234,20 @@ app.post('/api/friends/add', authenticateToken, async (req, res) => {
   }
 });
 
+app.get('/api/users/search', authenticateToken, async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || q.length < 1) return res.json([]);
+    const users = await all(
+      'SELECT id, username FROM users WHERE username ILIKE $1 AND id != $2 LIMIT 5',
+      [`%${q}%`, req.user.id]
+    );
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Socket.io
 const users = new Map();
 

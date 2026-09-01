@@ -28,6 +28,9 @@ function Dashboard() {
   const [friends, setFriends] = useState([]);
   const [activeTab, setActiveTab] = useState('friends');
   const [newFriendUsername, setNewFriendUsername] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [showSearch, setShowSearch] = useState(false);
+  const searchTimeoutRef = useRef(null);
   const [connectedVoiceChannel, setConnectedVoiceChannel] = useState(null);
   const [voiceUsers, setVoiceUsers] = useState([]);
   const [invites, setInvites] = useState([]);
@@ -210,13 +213,41 @@ function Dashboard() {
 
   const handleAddFriend = async (e) => {
     e.preventDefault();
+    if (!newFriendUsername.trim()) return;
     try {
-      await axios.post(`${API_URL}/api/friends/add`, { username: newFriendUsername });
+      await axios.post(`${API_URL}/api/friends/add`, { username: newFriendUsername.trim() });
       loadFriends();
       setNewFriendUsername('');
+      setSearchResults([]);
+      setShowSearch(false);
     } catch (error) {
-      console.error('Error adding friend:', error);
+      alert(error.response?.data?.error || 'Error adding friend');
     }
+  };
+
+  const handleSearchUsers = (value) => {
+    setNewFriendUsername(value);
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    if (!value.trim()) {
+      setSearchResults([]);
+      setShowSearch(false);
+      return;
+    }
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const res = await axios.get(`${API_URL}/api/users/search?q=${encodeURIComponent(value.trim())}`);
+        setSearchResults(res.data);
+        setShowSearch(res.data.length > 0);
+      } catch (err) {
+        console.error('Search error:', err);
+      }
+    }, 300);
+  };
+
+  const handleSelectUser = (username) => {
+    setNewFriendUsername(username);
+    setSearchResults([]);
+    setShowSearch(false);
   };
 
   const handleCreateInvite = async () => {
@@ -303,15 +334,29 @@ function Dashboard() {
 
         {activeTab === 'friends' ? (
           <div className="friends-section">
-            <div className="add-friend-form">
-              <input
-                type="text"
-                placeholder="Add by username"
-                value={newFriendUsername}
-                onChange={(e) => setNewFriendUsername(e.target.value)}
-              />
-              <button onClick={handleAddFriend}>Add</button>
-            </div>
+            <form className="add-friend-form" onSubmit={handleAddFriend}>
+              <div className="search-wrapper">
+                <input
+                  type="text"
+                  placeholder="Search username..."
+                  value={newFriendUsername}
+                  onChange={(e) => handleSearchUsers(e.target.value)}
+                  onFocus={() => searchResults.length > 0 && setShowSearch(true)}
+                  onBlur={() => setTimeout(() => setShowSearch(false), 200)}
+                />
+                {showSearch && searchResults.length > 0 && (
+                  <div className="search-dropdown">
+                    {searchResults.map(u => (
+                      <div key={u.id} className="search-item" onMouseDown={() => handleSelectUser(u.username)}>
+                        <div className="search-avatar">{u.username.charAt(0).toUpperCase()}</div>
+                        <span>{u.username}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <button type="submit">Add</button>
+            </form>
             <div className="friends-label">Friends — {friends.length}</div>
             <div className="friends-list">
               {friends.map(friend => (
