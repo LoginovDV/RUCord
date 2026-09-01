@@ -143,6 +143,57 @@ app.post('/api/servers/:serverId/join', authenticateToken, async (req, res) => {
   }
 });
 
+// Server edit/delete routes
+app.put('/api/servers/:serverId', authenticateToken, async (req, res) => {
+  try {
+    const { name } = req.body;
+    const srv = await get('SELECT * FROM servers WHERE id = $1', [req.params.serverId]);
+    if (!srv) return res.status(404).json({ error: 'Server not found' });
+    const serverOwnerId = srv.ownerId || srv.ownerid;
+    if (serverOwnerId !== req.user.id) return res.status(403).json({ error: 'Only the server owner can edit' });
+    if (name !== undefined && name.trim()) {
+      const existing = await get('SELECT * FROM servers WHERE name = $1 AND ownerid = $2 AND id != $3', [name.trim(), req.user.id, req.params.serverId]);
+      if (existing) return res.status(400).json({ error: 'You already have a server with this name' });
+      await run('UPDATE servers SET name = $1 WHERE id = $2', [name.trim(), req.params.serverId]);
+    }
+    const updated = await get('SELECT * FROM servers WHERE id = $1', [req.params.serverId]);
+    io.emit('server_updated', updated);
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/servers/:serverId/avatar', authenticateToken, async (req, res) => {
+  try {
+    const srv = await get('SELECT * FROM servers WHERE id = $1', [req.params.serverId]);
+    if (!srv) return res.status(404).json({ error: 'Server not found' });
+    const serverOwnerId = srv.ownerId || srv.ownerid;
+    if (serverOwnerId !== req.user.id) return res.status(403).json({ error: 'Only the server owner can edit' });
+    const { avatar } = req.body;
+    await run('UPDATE servers SET avatar = $1 WHERE id = $2', [avatar, req.params.serverId]);
+    const updated = await get('SELECT * FROM servers WHERE id = $1', [req.params.serverId]);
+    io.emit('server_updated', updated);
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/servers/:serverId', authenticateToken, async (req, res) => {
+  try {
+    const srv = await get('SELECT * FROM servers WHERE id = $1', [req.params.serverId]);
+    if (!srv) return res.status(404).json({ error: 'Server not found' });
+    const serverOwnerId = srv.ownerId || srv.ownerid;
+    if (serverOwnerId !== req.user.id) return res.status(403).json({ error: 'Only the server owner can delete' });
+    await run('DELETE FROM servers WHERE id = $1', [req.params.serverId]);
+    io.emit('server_deleted', { id: req.params.serverId });
+    res.json({ message: 'Server deleted' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Invite routes
 app.post('/api/servers/:serverId/invites', authenticateToken, async (req, res) => {
   try {

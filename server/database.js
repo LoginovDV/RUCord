@@ -135,6 +135,7 @@ async function initDatabase() {
   await pool.query(`ALTER TABLE channels ADD COLUMN IF NOT EXISTS description TEXT DEFAULT NULL`);
   await pool.query(`ALTER TABLE channels ADD COLUMN IF NOT EXISTS avatar TEXT DEFAULT NULL`);
   await pool.query(`ALTER TABLE channels ADD COLUMN IF NOT EXISTS "order" INTEGER DEFAULT 0`);
+  await pool.query(`ALTER TABLE servers ADD COLUMN IF NOT EXISTS avatar TEXT DEFAULT NULL`);
 
   console.log('PostgreSQL database initialized');
   return pool;

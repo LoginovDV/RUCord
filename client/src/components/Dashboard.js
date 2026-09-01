@@ -48,6 +48,8 @@ function Dashboard() {
   const [editingChannel, setEditingChannel] = useState(null);
   const [editChannelName, setEditChannelName] = useState('');
   const [editChannelDesc, setEditChannelDesc] = useState('');
+  const [editingServer, setEditingServer] = useState(null);
+  const [editServerName, setEditServerName] = useState('');
   const toggleMuteRef = useRef(null);
   const toggleDeafenRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -148,6 +150,20 @@ function Dashboard() {
       });
     });
 
+    socket.on('server_updated', (server) => {
+      setServers(prev => prev.map(s => s.id === server.id ? server : s));
+      if (selectedServer?.id === server.id) setSelectedServer(server);
+    });
+
+    socket.on('server_deleted', ({ id }) => {
+      setServers(prev => prev.filter(s => s.id !== id));
+      setAllChannels(prev => prev.filter(c => c.serverid !== id && c.serverId !== id));
+      if (selectedServer?.id === id) {
+        setSelectedServer(null);
+        setSelectedChannel(null);
+      }
+    });
+
     socket.on('channel_created', (channel) => {
       setAllChannels(prev => {
         if (prev.find(c => c.id === channel.id)) return prev;
@@ -179,6 +195,8 @@ function Dashboard() {
       socket.off('all_voice_channels_update');
       socket.off('user_speaking');
       socket.off('server_created');
+      socket.off('server_updated');
+      socket.off('server_deleted');
       socket.off('channel_created');
       socket.off('friend_added');
       socket.off('channel_updated');
@@ -346,6 +364,40 @@ function Dashboard() {
     reader.readAsDataURL(file);
   };
 
+  const handleEditServer = async () => {
+    if (!editingServer || !editServerName.trim()) return;
+    try {
+      const res = await axios.put(`${API_URL}/api/servers/${editingServer.id}`, { name: editServerName.trim() });
+      setEditingServer(null);
+    } catch (error) {
+      alert(error.response?.data?.error || 'Error editing server');
+    }
+  };
+
+  const handleDeleteServer = async (serverId) => {
+    if (!window.confirm('Are you sure you want to delete this server?')) return;
+    try {
+      await axios.delete(`${API_URL}/api/servers/${serverId}`);
+    } catch (error) {
+      alert(error.response?.data?.error || 'Error deleting server');
+    }
+  };
+
+  const handleServerAvatar = async (serverId, e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { alert('Max 2MB'); return; }
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      try {
+        await axios.put(`${API_URL}/api/servers/${serverId}/avatar`, { avatar: ev.target.result });
+      } catch (error) {
+        alert(error.response?.data?.error || 'Error uploading avatar');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleAddFriend = async (e) => {
     e.preventDefault();
     if (!newFriendUsername.trim()) return;
@@ -475,8 +527,18 @@ function Dashboard() {
                 setSelectedChannel(null);
                 setMessages([]);
               }}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                if (server.ownerId === user.id || server.ownerid === user.id) {
+                  setContextMenu({ x: e.clientX, y: e.clientY, server, type: 'server' });
+                }
+              }}
             >
-              {server.name.charAt(0).toUpperCase()}
+              {server.avatar ? (
+                <img src={server.avatar} alt="" style={{ width: '100%', height: '100%', borderRadius: 'inherit', objectFit: 'cover' }} />
+              ) : (
+                server.name.charAt(0).toUpperCase()
+              )}
               {hasVoiceUsers && <div className="server-voice-indicator">🎧</div>}
             </div>
           );
@@ -925,25 +987,50 @@ function Dashboard() {
         <>
           <div className="context-menu-overlay" onClick={() => setContextMenu(null)} />
           <div className="context-menu" style={{ top: contextMenu.y, left: contextMenu.x }}>
-            <div className="context-menu-item" onClick={() => {
-              setEditingChannel(contextMenu.channel);
-              setEditChannelName(contextMenu.channel.name);
-              setEditChannelDesc(contextMenu.channel.description || '');
-              setContextMenu(null);
-            }}>Edit Channel</div>
-            <div className="context-menu-item" onClick={() => {
-              handleChannelAvatar(contextMenu.channel.id, { target: { files: [] } });
-              setContextMenu(null);
-            }}>
-              <label style={{ cursor: 'pointer' }}>
-                Change Avatar
-                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => { handleChannelAvatar(contextMenu.channel.id, e); setContextMenu(null); }} />
-              </label>
-            </div>
-            <div className="context-menu-item red" onClick={() => {
-              handleDeleteChannel(contextMenu.channel.id);
-              setContextMenu(null);
-            }}>Delete Channel</div>
+            {contextMenu.type === 'server' ? (
+              <>
+                <div className="context-menu-item" onClick={() => {
+                  setEditingServer(contextMenu.server);
+                  setEditServerName(contextMenu.server.name);
+                  setContextMenu(null);
+                }}>Edit Server</div>
+                <div className="context-menu-item" onClick={() => {
+                  handleServerAvatar(contextMenu.server.id, { target: { files: [] } });
+                  setContextMenu(null);
+                }}>
+                  <label style={{ cursor: 'pointer' }}>
+                    Change Avatar
+                    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => { handleServerAvatar(contextMenu.server.id, e); setContextMenu(null); }} />
+                  </label>
+                </div>
+                <div className="context-menu-item red" onClick={() => {
+                  handleDeleteServer(contextMenu.server.id);
+                  setContextMenu(null);
+                }}>Delete Server</div>
+              </>
+            ) : (
+              <>
+                <div className="context-menu-item" onClick={() => {
+                  setEditingChannel(contextMenu.channel);
+                  setEditChannelName(contextMenu.channel.name);
+                  setEditChannelDesc(contextMenu.channel.description || '');
+                  setContextMenu(null);
+                }}>Edit Channel</div>
+                <div className="context-menu-item" onClick={() => {
+                  handleChannelAvatar(contextMenu.channel.id, { target: { files: [] } });
+                  setContextMenu(null);
+                }}>
+                  <label style={{ cursor: 'pointer' }}>
+                    Change Avatar
+                    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => { handleChannelAvatar(contextMenu.channel.id, e); setContextMenu(null); }} />
+                  </label>
+                </div>
+                <div className="context-menu-item red" onClick={() => {
+                  handleDeleteChannel(contextMenu.channel.id);
+                  setContextMenu(null);
+                }}>Delete Channel</div>
+              </>
+            )}
           </div>
         </>
       )}
@@ -968,6 +1055,25 @@ function Dashboard() {
             <div className="modal-buttons">
               <button onClick={() => setEditingChannel(null)}>Cancel</button>
               <button onClick={handleEditChannel}>Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Server Modal */}
+      {editingServer && (
+        <div className="modal-overlay" onClick={() => setEditingServer(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h2>Edit Server</h2>
+            <input
+              type="text"
+              placeholder="Server Name"
+              value={editServerName}
+              onChange={(e) => setEditServerName(e.target.value)}
+            />
+            <div className="modal-buttons">
+              <button onClick={() => setEditingServer(null)}>Cancel</button>
+              <button onClick={handleEditServer}>Save</button>
             </div>
           </div>
         </div>
