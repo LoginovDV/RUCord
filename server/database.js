@@ -34,23 +34,6 @@ function mapRow(row) {
 }
 
 async function initDatabase() {
-  const hasQuotedColumns = await pool.query(`
-    SELECT column_name FROM information_schema.columns 
-    WHERE table_name = 'users' AND column_name LIKE '%id'
-  `).then(r => r.rows.some(row => row.column_name !== row.column_name.toLowerCase()));
-
-  if (hasQuotedColumns) {
-    console.log('Migrating: dropping tables with quoted column names...');
-    await pool.query(`DROP TABLE IF EXISTS voice_channels CASCADE`);
-    await pool.query(`DROP TABLE IF EXISTS invites CASCADE`);
-    await pool.query(`DROP TABLE IF EXISTS messages CASCADE`);
-    await pool.query(`DROP TABLE IF EXISTS server_members CASCADE`);
-    await pool.query(`DROP TABLE IF EXISTS friends CASCADE`);
-    await pool.query(`DROP TABLE IF EXISTS channels CASCADE`);
-    await pool.query(`DROP TABLE IF EXISTS servers CASCADE`);
-    await pool.query(`DROP TABLE IF EXISTS users CASCADE`);
-  }
-
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,

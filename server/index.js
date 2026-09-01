@@ -145,20 +145,20 @@ app.post('/api/invites/:code/join', authenticateToken, async (req, res) => {
     const invite = await get('SELECT * FROM invites WHERE code = $1', [req.params.code]);
     if (!invite) return res.status(404).json({ error: 'Invalid invite' });
 
-    if (invite.maxuses && invite.uses >= invite.maxuses) {
+    if (invite.maxUses && invite.uses >= invite.maxUses) {
       return res.status(400).json({ error: 'Invite expired' });
     }
 
-    const existing = await get('SELECT * FROM server_members WHERE userid = $1 AND serverid = $2', [req.user.id, invite.serverid]);
+    const existing = await get('SELECT * FROM server_members WHERE userid = $1 AND serverid = $2', [req.user.id, invite.serverId]);
     if (existing) {
-      const srv = await get('SELECT * FROM servers WHERE id = $1', [invite.serverid]);
+      const srv = await get('SELECT * FROM servers WHERE id = $1', [invite.serverId]);
       return res.json(srv);
     }
 
-    await run('INSERT INTO server_members (id, userid, serverid) VALUES ($1, $2, $3)', [uuidv4(), req.user.id, invite.serverid]);
+    await run('INSERT INTO server_members (id, userid, serverid) VALUES ($1, $2, $3)', [uuidv4(), req.user.id, invite.serverId]);
     await run('UPDATE invites SET uses = uses + 1 WHERE id = $1', [invite.id]);
 
-    const srv = await get('SELECT * FROM servers WHERE id = $1', [invite.serverid]);
+    const srv = await get('SELECT * FROM servers WHERE id = $1', [invite.serverId]);
     res.json(srv);
   } catch (error) {
     res.status(500).json({ error: error.message });
