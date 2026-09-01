@@ -34,15 +34,6 @@ function mapRow(row) {
 }
 
 async function initDatabase() {
-  await pool.query(`DROP TABLE IF EXISTS voice_channels CASCADE`);
-  await pool.query(`DROP TABLE IF EXISTS invites CASCADE`);
-  await pool.query(`DROP TABLE IF EXISTS messages CASCADE`);
-  await pool.query(`DROP TABLE IF EXISTS server_members CASCADE`);
-  await pool.query(`DROP TABLE IF EXISTS friends CASCADE`);
-  await pool.query(`DROP TABLE IF EXISTS channels CASCADE`);
-  await pool.query(`DROP TABLE IF EXISTS servers CASCADE`);
-  await pool.query(`DROP TABLE IF EXISTS users CASCADE`);
-
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
