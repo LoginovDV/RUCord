@@ -367,7 +367,7 @@ function Dashboard() {
         </div>
         <div className="server-divider"></div>
         {servers.map(server => {
-          const serverChannels = allChannels.filter(ch => ch.serverid === server.id);
+          const serverChannels = allChannels.filter(ch => ch.serverId === server.id);
           const hasVoiceUsers = serverChannels.some(ch => ch.type === 'voice' && allVoiceChannels[ch.id] && allVoiceChannels[ch.id].length > 0);
           return (
             <div
