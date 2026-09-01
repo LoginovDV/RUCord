@@ -82,6 +82,11 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
 app.post('/api/servers', authenticateToken, async (req, res) => {
   try {
     const { name } = req.body;
+    if (!name || !name.trim()) return res.status(400).json({ error: 'Name is required' });
+    const existing = await get('SELECT * FROM servers WHERE name = $1 AND ownerid = $2', [name.trim(), req.user.id]);
+    if (existing) {
+      return res.status(400).json({ error: 'You already have a server with this name' });
+    }
     const serverId = uuidv4();
     const channelId = uuidv4();
     await run('INSERT INTO servers (id, name, ownerid) VALUES ($1, $2, $3)', [serverId, name, req.user.id]);
@@ -174,6 +179,9 @@ app.get('/api/servers/:serverId/channels', authenticateToken, async (req, res) =
 app.post('/api/servers/:serverId/channels', authenticateToken, async (req, res) => {
   try {
     const { name, type = 'text' } = req.body;
+    if (!name || !name.trim()) return res.status(400).json({ error: 'Name is required' });
+    const existing = await get('SELECT * FROM channels WHERE name = $1 AND serverid = $2', [name.trim(), req.params.serverId]);
+    if (existing) return res.status(400).json({ error: 'Channel already exists' });
     const channelId = uuidv4();
     await run('INSERT INTO channels (id, name, type, serverid) VALUES ($1, $2, $3, $4)', [channelId, name, type, req.params.serverId]);
     const channel = await get('SELECT * FROM channels WHERE id = $1', [channelId]);
