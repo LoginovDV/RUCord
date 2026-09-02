@@ -14,6 +14,8 @@ function VoiceChannel({ channelId, voiceUsers, onLeave, remoteScreen, onRemoteSc
   const socket = useSocket();
   const [audioReady, setAudioReady] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [screenSharer, setScreenSharer] = useState(null);
+  const [isWatching, setIsWatching] = useState(false);
   const localStreamRef = useRef(null);
   const screenStreamRef = useRef(null);
   const peerConnectionsRef = useRef({});
@@ -242,12 +244,13 @@ function VoiceChannel({ channelId, voiceUsers, onLeave, remoteScreen, onRemoteSc
       }
     };
 
-    const handleScreenShareStart = ({ from }) => {
-      onRemoteScreenChange({ peerId: from, stream: null });
-      socket.emit('screen_request', { to: from, from: user.id });
+    const handleScreenShareStart = ({ from, username }) => {
+      setScreenSharer({ userId: from, username });
     };
 
     const handleScreenShareStop = ({ from }) => {
+      setScreenSharer(null);
+      setIsWatching(false);
       onRemoteScreenChange(null);
       if (screenPeerConnectionsRef.current[from]) {
         screenPeerConnectionsRef.current[from].close();
@@ -293,12 +296,20 @@ function VoiceChannel({ channelId, voiceUsers, onLeave, remoteScreen, onRemoteSc
       }
     };
 
+    const handleScreenStopWatch = ({ from }) => {
+      if (screenPeerConnectionsRef.current[from]) {
+        screenPeerConnectionsRef.current[from].close();
+        delete screenPeerConnectionsRef.current[from];
+      }
+    };
+
     socket.on('voice_offer', handleVoiceOffer);
     socket.on('voice_answer', handleVoiceAnswer);
     socket.on('voice_ice_candidate', handleIceCandidate);
     socket.on('screen_share_start', handleScreenShareStart);
     socket.on('screen_share_stop', handleScreenShareStop);
     socket.on('screen_request', handleScreenRequest);
+    socket.on('screen_stop_watch', handleScreenStopWatch);
     socket.on('screen_offer', handleScreenOffer);
     socket.on('screen_answer', handleScreenAnswer);
     socket.on('screen_ice_candidate', handleScreenIceCandidate);
@@ -310,6 +321,7 @@ function VoiceChannel({ channelId, voiceUsers, onLeave, remoteScreen, onRemoteSc
       socket.off('screen_share_start', handleScreenShareStart);
       socket.off('screen_share_stop', handleScreenShareStop);
       socket.off('screen_request', handleScreenRequest);
+      socket.off('screen_stop_watch', handleScreenStopWatch);
       socket.off('screen_offer', handleScreenOffer);
       socket.off('screen_answer', handleScreenAnswer);
       socket.off('screen_ice_candidate', handleScreenIceCandidate);
@@ -358,12 +370,7 @@ function VoiceChannel({ channelId, voiceUsers, onLeave, remoteScreen, onRemoteSc
       setIsScreenSharing(true);
       if (onLocalScreenChange) onLocalScreenChange(stream);
 
-      socket.emit('screen_share_start', { channelId, from: user.id });
-
-      const otherUsers = voiceUsers.filter(vu => vu.userId !== user.id);
-      otherUsers.forEach(vu => {
-        createScreenPeer(vu.userId, stream, true);
-      });
+      socket.emit('screen_share_start', { channelId, from: user.id, username: user.username });
 
       stream.getVideoTracks()[0].onended = () => {
         stopScreenShare();
@@ -388,8 +395,27 @@ function VoiceChannel({ channelId, voiceUsers, onLeave, remoteScreen, onRemoteSc
     });
   };
 
+  const watchStream = () => {
+    if (!screenSharer) return;
+    setIsWatching(true);
+    socket.emit('screen_request', { to: screenSharer.userId, from: user.id });
+  };
+
+  const stopWatching = () => {
+    if (screenSharer) {
+      socket.emit('screen_stop_watch', { to: screenSharer.userId, from: user.id });
+    }
+    if (screenPeerConnectionsRef.current[screenSharer?.userId]) {
+      screenPeerConnectionsRef.current[screenSharer.userId].close();
+      delete screenPeerConnectionsRef.current[screenSharer.userId];
+    }
+    setIsWatching(false);
+    onRemoteScreenChange(null);
+  };
+
   const handleLeave = () => {
     if (isScreenSharing) stopScreenShare();
+    if (isWatching) stopWatching();
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(track => track.stop());
       localStreamRef.current = null;
@@ -413,18 +439,41 @@ function VoiceChannel({ channelId, voiceUsers, onLeave, remoteScreen, onRemoteSc
         </div>
       )}
       <div className="voice-users-list">
-        {uniqueUsers.map(vu => (
-          <div key={vu.userId} className="voice-user">
-            <div className={`voice-user-avatar ${speakingUsers && speakingUsers[vu.userId] ? 'speaking' : ''}`}>
-              {vu.username?.charAt(0).toUpperCase()}
+        {uniqueUsers.map(vu => {
+          const isSharer = screenSharer && screenSharer.userId === vu.userId;
+          return (
+            <div key={vu.userId} className="voice-user">
+              <div className={`voice-user-avatar ${speakingUsers && speakingUsers[vu.userId] ? 'speaking' : ''}`}>
+                {vu.username?.charAt(0).toUpperCase()}
+              </div>
+              <span className="voice-user-name">{vu.username}</span>
+              {isSharer && <span className="live-badge">LIVE</span>}
+              {speakingUsers && speakingUsers[vu.userId] && (
+                <span className="speaking-indicator"></span>
+              )}
             </div>
-            <span className="voice-user-name">{vu.username}</span>
-            {speakingUsers && speakingUsers[vu.userId] && (
-              <span className="speaking-indicator"></span>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
+
+      {screenSharer && screenSharer.userId !== user.id && (
+        <div className="screen-share-section">
+          <div className="screen-share-info">
+            <span className="screen-share-username">{screenSharer.username}</span>
+            <span className="screen-share-label">is sharing their screen</span>
+          </div>
+          {!isWatching ? (
+            <button className="watch-stream-btn" onClick={watchStream}>
+              Watch Stream
+            </button>
+          ) : (
+            <button className="stop-watching-btn" onClick={stopWatching}>
+              Stop Watching
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="voice-controls">
         <button
           className={`voice-control-btn ${isScreenSharing ? 'sharing' : ''}`}

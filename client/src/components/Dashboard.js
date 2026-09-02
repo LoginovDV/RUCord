@@ -774,36 +774,40 @@ function Dashboard() {
           <>
             <div className="chat-header">
               <span className="channel-name"># {selectedChannel.name}</span>
-              {remoteScreen && (
-                <span className="screen-share-indicator">🖥️ Screen Share Active</span>
-              )}
             </div>
 
             {remoteScreen && remoteScreen.stream ? (
-              <div className="screen-share-center">
-                <div className="screen-share-center-header">
-                  <span>🖥️ Screen Share</span>
-                  <button onClick={() => setRemoteScreen(null)}>✕ Close</button>
+              <div className="stream-viewer">
+                <div className="stream-viewer-header">
+                  <div className="stream-viewer-info">
+                    <span className="stream-viewer-live">LIVE</span>
+                    <span className="stream-viewer-title">Screen Share</span>
+                  </div>
+                  <button className="stream-viewer-close" onClick={() => setRemoteScreen(null)}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                  </button>
                 </div>
                 <video
                   autoPlay
                   playsInline
                   ref={el => { if (el) el.srcObject = remoteScreen.stream; }}
-                  className="screen-share-center-video"
+                  className="stream-viewer-video"
                 />
               </div>
             ) : localScreenStream ? (
-              <div className="screen-share-center">
-                <div className="screen-share-center-header">
-                  <span>🖥️ Your Screen</span>
-                  <button onClick={() => {}}>✕ Close</button>
+              <div className="stream-viewer">
+                <div className="stream-viewer-header">
+                  <div className="stream-viewer-info">
+                    <span className="stream-viewer-live">LIVE</span>
+                    <span className="stream-viewer-title">Your Screen</span>
+                  </div>
                 </div>
                 <video
                   autoPlay
                   playsInline
                   muted
                   ref={el => { if (el) el.srcObject = localScreenStream; }}
-                  className="screen-share-center-video"
+                  className="stream-viewer-video"
                 />
               </div>
             ) : (

@@ -494,8 +494,8 @@ io.on('connection', (socket) => {
 
   // Screen share signaling
   socket.on('screen_share_start', (data) => {
-    const { channelId, from } = data;
-    socket.to(`voice_${channelId}`).emit('screen_share_start', { from, socketId: socket.id });
+    const { channelId, from, username } = data;
+    socket.to(`voice_${channelId}`).emit('screen_share_start', { from, username, socketId: socket.id });
   });
 
   socket.on('screen_share_stop', (data) => {
@@ -508,6 +508,14 @@ io.on('connection', (socket) => {
     const targetSocketId = users.get(to);
     if (targetSocketId) {
       io.to(targetSocketId).emit('screen_request', { from });
+    }
+  });
+
+  socket.on('screen_stop_watch', (data) => {
+    const { to, from } = data;
+    const targetSocketId = users.get(to);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('screen_stop_watch', { from });
     }
   });
 
