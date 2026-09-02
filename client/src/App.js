@@ -85,9 +85,11 @@ function App() {
   };
 
   const logout = async () => {
+    socket.emit('heartbeat', user?.id);
     try {
-      await axios.post('/api/auth/logout');
+      await axios.post(`${API_URL}/api/auth/logout`);
     } catch (e) {}
+    socket.disconnect();
     localStorage.removeItem('token');
     setToken(null);
     setUser(null);
