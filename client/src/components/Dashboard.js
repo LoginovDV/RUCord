@@ -594,6 +594,7 @@ function Dashboard() {
       </div>
 
       {/* Channels sidebar */}
+      {activeTab !== 'dm' && (
       <div className="channels-sidebar">
         <div className="channels-header">
           <h3>{activeTab === 'friends' ? 'Friends' : selectedServer?.name || 'Select Server'}</h3>
@@ -798,6 +799,7 @@ function Dashboard() {
           )}
         </div>
       </div>
+      )}
 
       {/* Chat area */}
       <div className="chat-area">
