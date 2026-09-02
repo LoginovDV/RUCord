@@ -388,6 +388,44 @@ app.get('/api/users/search', authenticateToken, async (req, res) => {
   }
 });
 
+// DM routes
+app.get('/api/dm/:friendId', authenticateToken, async (req, res) => {
+  try {
+    const messages = await all(`
+      SELECT dm.*, u.username as sendername
+      FROM direct_messages dm
+      INNER JOIN users u ON dm.senderid = u.id
+      WHERE (dm.senderid = $1 AND dm.receiverid = $2)
+         OR (dm.senderid = $2 AND dm.receiverid = $1)
+      ORDER BY dm.createdat ASC
+      LIMIT 100
+    `, [req.user.id, req.params.friendId]);
+    res.json(messages);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/dm/:friendId', authenticateToken, async (req, res) => {
+  try {
+    const { content } = req.body;
+    if (!content || !content.trim()) return res.status(400).json({ error: 'Message is required' });
+    const friend = await get('SELECT * FROM users WHERE id = $1', [req.params.friendId]);
+    if (!friend) return res.status(404).json({ error: 'User not found' });
+    const msgId = uuidv4();
+    await run('INSERT INTO direct_messages (id, senderid, receiverid, content) VALUES ($1, $2, $3, $4)',
+      [msgId, req.user.id, req.params.friendId, content.trim()]);
+    const msg = await get('SELECT dm.*, u.username as sendername FROM direct_messages dm INNER JOIN users u ON dm.senderid = u.id WHERE dm.id = $1', [msgId]);
+    const targetSocketId = users.get(req.params.friendId);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('new_dm', msg);
+    }
+    res.json(msg);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Socket.io
 const users = new Map();
 

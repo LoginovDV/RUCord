@@ -108,6 +108,18 @@ async function initDatabase() {
   `);
 
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS direct_messages (
+      id TEXT PRIMARY KEY,
+      senderId TEXT NOT NULL,
+      receiverId TEXT NOT NULL,
+      content TEXT NOT NULL,
+      createdAt TEXT DEFAULT NOW(),
+      FOREIGN KEY (senderId) REFERENCES users(id),
+      FOREIGN KEY (receiverId) REFERENCES users(id)
+    )
+  `);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS voice_channels (
       id TEXT PRIMARY KEY,
       channelId TEXT NOT NULL,

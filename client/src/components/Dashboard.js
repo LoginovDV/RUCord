@@ -50,6 +50,10 @@ function Dashboard() {
   const [editChannelDesc, setEditChannelDesc] = useState('');
   const [editingServer, setEditingServer] = useState(null);
   const [editServerName, setEditServerName] = useState('');
+  const [selectedFriend, setSelectedFriend] = useState(null);
+  const [dmMessages, setDmMessages] = useState([]);
+  const [dmInput, setDmInput] = useState('');
+  const selectedFriendRef = useRef(null);
   const toggleMuteRef = useRef(null);
   const toggleDeafenRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -175,6 +179,13 @@ function Dashboard() {
       loadFriends();
     });
 
+    socket.on('new_dm', (msg) => {
+      const senderId = msg.senderId || msg.senderid;
+      if (selectedFriendRef.current && senderId === selectedFriendRef.current.id) {
+        setDmMessages(prev => [...prev, msg]);
+      }
+    });
+
     socket.on('channel_updated', (channel) => {
       setChannels(prev => prev.map(c => c.id === channel.id ? channel : c));
       setAllChannels(prev => prev.map(c => c.id === channel.id ? channel : c));
@@ -199,6 +210,7 @@ function Dashboard() {
       socket.off('server_deleted');
       socket.off('channel_created');
       socket.off('friend_added');
+      socket.off('new_dm');
       socket.off('channel_updated');
       socket.off('channel_deleted');
     };
@@ -207,6 +219,10 @@ function Dashboard() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    selectedFriendRef.current = selectedFriend;
+  }, [selectedFriend]);
 
   const loadServers = async () => {
     try {
@@ -437,6 +453,35 @@ function Dashboard() {
     setShowSearch(false);
   };
 
+  const loadDmMessages = async (friendId) => {
+    try {
+      const res = await axios.get(`${API_URL}/api/dm/${friendId}`);
+      setDmMessages(res.data);
+    } catch (error) {
+      console.error('Error loading DMs:', error);
+    }
+  };
+
+  const handleOpenDm = (friend) => {
+    setSelectedFriend(friend);
+    setSelectedChannel(null);
+    setSelectedServer(null);
+    setActiveTab('dm');
+    loadDmMessages(friend.id);
+  };
+
+  const handleSendDm = async (e) => {
+    e.preventDefault();
+    if (!dmInput.trim() || !selectedFriend) return;
+    try {
+      const res = await axios.post(`${API_URL}/api/dm/${selectedFriend.id}`, { content: dmInput.trim() });
+      setDmMessages(prev => [...prev, res.data]);
+      setDmInput('');
+    } catch (error) {
+      alert(error.response?.data?.error || 'Error sending message');
+    }
+  };
+
   const handleCreateInvite = async () => {
     if (!selectedServer) return;
     try {
@@ -588,13 +633,14 @@ function Dashboard() {
             <div className="friends-label">Friends — {friends.length}</div>
             <div className="friends-list">
               {friends.map(friend => (
-                <div key={friend.id} className="friend-item">
+                <div key={friend.id} className="friend-item" onClick={() => handleOpenDm(friend)}>
                   <div className="friend-avatar-small">{friend.username.charAt(0).toUpperCase()}</div>
                   <div className={`friend-status ${friend.status}`}></div>
                   <div className="friend-item-info">
                     <span className="friend-item-name">{friend.username}</span>
                     <span className={`friend-item-status ${friend.status}`}>{friend.status}</span>
                   </div>
+                  <button className="friend-dm-btn" title="Send Message">✉</button>
                 </div>
               ))}
             </div>
@@ -755,7 +801,45 @@ function Dashboard() {
 
       {/* Chat area */}
       <div className="chat-area">
-        {activeTab === 'friends' ? (
+        {activeTab === 'dm' && selectedFriend ? (
+          <div className="dm-chat">
+            <div className="dm-header">
+              <div className="dm-header-avatar">{selectedFriend.username.charAt(0).toUpperCase()}</div>
+              <div className="dm-header-info">
+                <span className="dm-header-name">{selectedFriend.username}</span>
+                <span className={`dm-header-status ${selectedFriend.status}`}>{selectedFriend.status}</span>
+              </div>
+              <button className="dm-back-btn" onClick={() => { setSelectedFriend(null); setActiveTab('friends'); }}>✕</button>
+            </div>
+            <div className="dm-messages">
+              {dmMessages.map(msg => {
+                const senderId = msg.senderId || msg.senderid;
+                const senderName = msg.senderName || msg.sendername;
+                const createdAt = msg.createdAt || msg.createdat;
+                return (
+                <div key={msg.id} className={`dm-message ${senderId === user.id ? 'own' : ''}`}>
+                  <div className="dm-message-avatar">{senderName?.charAt(0).toUpperCase()}</div>
+                  <div className="dm-message-content">
+                    <div className="dm-message-header">
+                      <span className="dm-message-author">{senderName}</span>
+                      <span className="dm-message-time">{new Date(createdAt).toLocaleTimeString()}</span>
+                    </div>
+                    <div className="dm-message-text">{msg.content}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <form className="dm-input" onSubmit={handleSendDm}>
+              <input
+                type="text"
+                placeholder={`Message @${selectedFriend.username}`}
+                value={dmInput}
+                onChange={(e) => setDmInput(e.target.value)}
+              />
+              <button type="submit">➤</button>
+            </form>
+          </div>
+        ) : activeTab === 'friends' ? (
           <div className="friends-page">
             <h2>Friends</h2>
             <div className="friends-grid">
