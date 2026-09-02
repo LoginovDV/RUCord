@@ -374,9 +374,9 @@ app.post('/api/friends/add', authenticateToken, async (req, res) => {
     );
     if (existing) return res.status(400).json({ error: 'Friend request already exists' });
     await run('INSERT INTO friends (id, userid, friendid, status) VALUES ($1, $2, $3, $4)', [uuidv4(), req.user.id, friend.id, 'accepted']);
-    const targetSocketId = users.get(friend.id);
-    if (targetSocketId) {
-      io.to(targetSocketId).emit('friend_added');
+    const entry = users.get(friend.id);
+    if (entry) {
+      io.to(entry.socketId).emit('friend_added');
     }
     res.json({ message: 'Friend added' });
   } catch (error) {
@@ -426,9 +426,9 @@ app.post('/api/dm/:friendId', authenticateToken, async (req, res) => {
     await run('INSERT INTO direct_messages (id, senderid, receiverid, content) VALUES ($1, $2, $3, $4)',
       [msgId, req.user.id, req.params.friendId, content.trim()]);
     const msg = await get('SELECT dm.*, u.username as sendername FROM direct_messages dm INNER JOIN users u ON dm.senderid = u.id WHERE dm.id = $1', [msgId]);
-    const targetSocketId = users.get(req.params.friendId);
-    if (targetSocketId) {
-      io.to(targetSocketId).emit('new_dm', msg);
+    const entry = users.get(req.params.friendId);
+    if (entry) {
+      io.to(entry.socketId).emit('new_dm', msg);
     }
     res.json(msg);
   } catch (error) {
@@ -437,17 +437,24 @@ app.post('/api/dm/:friendId', authenticateToken, async (req, res) => {
 });
 
 // Socket.io
-const users = new Map();
+const users = new Map(); // userId -> { socketId, lastHeartbeat }
 
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
   socket.on('user_online', async (userId) => {
-    users.set(userId, socket.id);
+    users.set(userId, { socketId: socket.id, lastHeartbeat: Date.now() });
     await run('UPDATE users SET status = $1 WHERE id = $2', ['online', userId]);
     io.emit('user_status_change', { userId, status: 'online' });
     const allVoiceState = await all('SELECT channelid, userid FROM voice_channels');
     socket.emit('all_voice_channels_update', allVoiceState);
+  });
+
+  socket.on('heartbeat', async (userId) => {
+    const entry = users.get(userId);
+    if (entry) {
+      entry.lastHeartbeat = Date.now();
+    }
   });
 
   socket.on('join_channel', (channelId) => {
@@ -516,9 +523,9 @@ io.on('connection', (socket) => {
   socket.on('voice_offer', (data) => {
     const { to, offer, from } = data;
     console.log(`Voice offer from ${from} to ${to}`);
-    const targetSocketId = users.get(to);
-    if (targetSocketId) {
-      io.to(targetSocketId).emit('voice_offer', { from, offer, socketId: socket.id });
+    const entry = users.get(to);
+    if (entry) {
+      io.to(entry.socketId).emit('voice_offer', { from, offer, socketId: socket.id });
     } else {
       console.log(`Target ${to} not found in users map`);
     }
@@ -526,17 +533,17 @@ io.on('connection', (socket) => {
 
   socket.on('voice_answer', (data) => {
     const { to, answer, from } = data;
-    const targetSocketId = users.get(to);
-    if (targetSocketId) {
-      io.to(targetSocketId).emit('voice_answer', { from, answer, socketId: socket.id });
+    const entry = users.get(to);
+    if (entry) {
+      io.to(entry.socketId).emit('voice_answer', { from, answer, socketId: socket.id });
     }
   });
 
   socket.on('voice_ice_candidate', (data) => {
     const { to, candidate, from } = data;
-    const targetSocketId = users.get(to);
-    if (targetSocketId) {
-      io.to(targetSocketId).emit('voice_ice_candidate', { from, candidate, socketId: socket.id });
+    const entry = users.get(to);
+    if (entry) {
+      io.to(entry.socketId).emit('voice_ice_candidate', { from, candidate, socketId: socket.id });
     }
   });
 
@@ -553,47 +560,47 @@ io.on('connection', (socket) => {
 
   socket.on('screen_request', (data) => {
     const { to, from } = data;
-    const targetSocketId = users.get(to);
-    if (targetSocketId) {
-      io.to(targetSocketId).emit('screen_request', { from });
+    const entry = users.get(to);
+    if (entry) {
+      io.to(entry.socketId).emit('screen_request', { from });
     }
   });
 
   socket.on('screen_stop_watch', (data) => {
     const { to, from } = data;
-    const targetSocketId = users.get(to);
-    if (targetSocketId) {
-      io.to(targetSocketId).emit('screen_stop_watch', { from });
+    const entry = users.get(to);
+    if (entry) {
+      io.to(entry.socketId).emit('screen_stop_watch', { from });
     }
   });
 
   socket.on('screen_offer', (data) => {
     const { to, offer, from } = data;
-    const targetSocketId = users.get(to);
-    if (targetSocketId) {
-      io.to(targetSocketId).emit('screen_offer', { from, offer, socketId: socket.id });
+    const entry = users.get(to);
+    if (entry) {
+      io.to(entry.socketId).emit('screen_offer', { from, offer, socketId: socket.id });
     }
   });
 
   socket.on('screen_answer', (data) => {
     const { to, answer, from } = data;
-    const targetSocketId = users.get(to);
-    if (targetSocketId) {
-      io.to(targetSocketId).emit('screen_answer', { from, answer, socketId: socket.id });
+    const entry = users.get(to);
+    if (entry) {
+      io.to(entry.socketId).emit('screen_answer', { from, answer, socketId: socket.id });
     }
   });
 
   socket.on('screen_ice_candidate', (data) => {
     const { to, candidate, from } = data;
-    const targetSocketId = users.get(to);
-    if (targetSocketId) {
-      io.to(targetSocketId).emit('screen_ice_candidate', { from, candidate, socketId: socket.id });
+    const entry = users.get(to);
+    if (entry) {
+      io.to(entry.socketId).emit('screen_ice_candidate', { from, candidate, socketId: socket.id });
     }
   });
 
   socket.on('disconnect', async () => {
-    for (const [userId, socketId] of users.entries()) {
-      if (socketId === socket.id) {
+    for (const [userId, entry] of users.entries()) {
+      if (entry.socketId === socket.id) {
         users.delete(userId);
         await run('UPDATE users SET status = $1 WHERE id = $2', ['offline', userId]);
         io.emit('user_status_change', { userId, status: 'offline' });
@@ -617,6 +624,19 @@ io.on('connection', (socket) => {
     console.log('User disconnected:', socket.id);
   });
 });
+
+// Heartbeat check — mark users offline if no heartbeat in 60s
+setInterval(async () => {
+  const now = Date.now();
+  for (const [userId, entry] of users.entries()) {
+    if (now - entry.lastHeartbeat > 60000) {
+      users.delete(userId);
+      await run('UPDATE users SET status = $1 WHERE id = $2', ['offline', userId]);
+      io.emit('user_status_change', { userId, status: 'offline' });
+      console.log(`User ${userId} marked offline (heartbeat timeout)`);
+    }
+  }
+}, 30000);
 
 const clientBuild = path.join(__dirname, '..', 'client', 'build');
 app.use(express.static(clientBuild));

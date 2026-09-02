@@ -47,6 +47,14 @@ function App() {
 
   useEffect(() => {
     if (!user) return;
+    const interval = setInterval(() => {
+      socket.emit('heartbeat', user.id);
+    }, 25000);
+    return () => clearInterval(interval);
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
     const handleUnload = () => {
       fetch(`${API_URL}/api/auth/logout`, {
         method: 'POST',
