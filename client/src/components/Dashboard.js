@@ -827,7 +827,7 @@ function Dashboard() {
                     <div className="dm-message-text">{msg.content}</div>
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
             <form className="dm-input" onSubmit={handleSendDm}>
               <input
