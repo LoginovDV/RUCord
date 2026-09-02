@@ -63,7 +63,10 @@ function App() {
     return res.data;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await axios.post('/api/auth/logout');
+    } catch (e) {}
     localStorage.removeItem('token');
     setToken(null);
     setUser(null);

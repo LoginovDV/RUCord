@@ -78,6 +78,16 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
   res.json(user);
 });
 
+app.post('/api/auth/logout', authenticateToken, async (req, res) => {
+  try {
+    await run('UPDATE users SET status = $1 WHERE id = $2', ['offline', req.user.id]);
+    io.emit('user_status_change', { userId: req.user.id, status: 'offline' });
+    res.json({ message: 'Logged out' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Server routes
 app.post('/api/servers', authenticateToken, async (req, res) => {
   try {
